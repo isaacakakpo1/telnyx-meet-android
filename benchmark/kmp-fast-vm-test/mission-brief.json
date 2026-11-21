@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0",
+  "mission_id": "telnyx-meet-kmp-fastvm-v1",
+  "objective": "Migrate the legacy Android Telnyx Meet sample into a maintainable Compose Multiplatform application with shared presentation and domain code, coroutine-based state and effects, and platform-specific Telnyx video adapters for Android and iOS.",
+  "expected_outcomes": [
+    "The fork contains a buildable Kotlin Multiplatform project with shared Compose UI and navigation.",
+    "Shared networking, repositories, use cases, presentation state, and events use structured Kotlin coroutines and Flow.",
+    "Android and iOS integrate their native Telnyx video SDKs behind one capability-aware shared meeting contract.",
+    "The existing Android sample's supported meeting workflows remain available and iOS capability gaps are explicit rather than simulated.",
+    "The migration is independently tested, reviewed, integrated, and reproducible from a clean checkout."
+  ],
+  "targets": [
+    "repo:isaacakakpo1/telnyx-meet-android@3276e2887c7eced7a4dcbec7f726d7eb0f3d2574",
+    "branch:kmp-fast-vm-test"
+  ],
+  "included_scope": [
+    "Gradle and module migration to Kotlin Multiplatform and Compose Multiplatform",
+    "Shared Compose screens and navigation for room discovery, room creation, room join, meeting controls, participants, chat, and observable meeting state",
+    "Shared models, Ktor networking, serialization, repositories, use cases, reducers or presentation models, and validation",
+    "Kotlin suspend APIs, StateFlow for durable UI state, SharedFlow or channels for bounded one-off effects, cancellation, and structured concurrency",
+    "Android Telnyx video SDK adapter and Android permission, lifecycle, audio, camera, and screen-share integration",
+    "iOS TelnyxVideoSdk adapter through supported Objective-C/CocoaPods interop, plus iOS permission, lifecycle, audio, and camera integration",
+    "Capability-aware handling for SDK features that are unavailable on a platform",
+    "Common, Android, and iOS tests; architecture and dependency guards; CI for supported build targets",
+    "Removal of tracked local credentials and replacement with documented environment or local configuration",
+    "Migration and developer documentation"
+  ],
+  "excluded_scope": [
+    "Publishing to Google Play or the Apple App Store",
+    "Changing the public Telnyx SDK APIs or repositories",
+    "Pushing commits or branches to team-telnyx/telnyx-meet-android",
+    "Changing main in either the fork or upstream repository",
+    "Inventing unsupported iOS SDK capabilities",
+    "A visual redesign unrelated to adopting shared Compose UI",
+    "Production credentials, production rooms, or destructive external operations"
+  ],
+  "acceptance_criteria": [
+    "A clean checkout exposes commonMain, commonTest, androidMain, androidUnitTest, iosMain, and iosTest source sets and builds the supported Android and iOS targets with documented commands.",
+    "Shared Compose UI and navigation render the core room and meeting workflows without importing Android or UIKit classes from commonMain.",
+    "Shared asynchronous APIs are suspend-based or Flow-based; production common code contains no LiveData, Retrofit Callback, GlobalScope, or unmanaged CoroutineScope creation.",
+    "Screen state is represented by StateFlow and one-off effects have explicit buffered delivery and lifecycle cancellation semantics.",
+    "Android and iOS meeting engines implement the same shared contract and publish explicit capability state for camera, microphone, participants, chat, screen sharing, active speaker, and network statistics.",
+    "Existing supported Android behaviors are preserved or their intentional changes are documented and covered by tests; unsupported iOS behaviors are disabled with honest UI and tests.",
+    "Common unit tests, Android unit or instrumentation tests, iOS simulator tests, architecture checks, static analysis, and repository CI pass from a clean environment.",
+    "The dependency graph resolves without relying on the unavailable legacy WebRTC/libyuv artifacts observed at the base commit.",
+    "Tracked credential-bearing local.properties and equivalent secret files are removed from version control, ignored, and replaced by secret-free examples or documentation without exposing historical values.",
+    "Every accepted change is reviewed, tied to immutable evidence, and integrated only into kmp-fast-vm-test on the fork.",
+    "The final evidence proves upstream and both main branches were not mutated.",
+    "The final repository includes an architecture overview, platform capability matrix, build instructions, test instructions, and migration notes."
+  ],
+  "evidence_requirements": [
+    "Clean-checkout Gradle build logs for common, Android, and iOS targets",
+    "Test reports for common, Android, iOS, architecture, and integration gates",
+    "Static scan proving forbidden platform imports and unstructured coroutine constructs are absent from common production code",
+    "Dependency-resolution report showing the legacy unavailable artifacts are not required",
+    "Secret scan and git-index evidence proving local credentials are untracked",
+    "Platform capability matrix linked to adapter tests",
+    "Candidate, review, conflict, CI, merge, cost, and FastVM cleanup receipts",
+    "Git evidence proving all writes stayed on the fork's kmp-fast-vm-test branch"
+  ],
+  "requested_capabilities": [
+    "read",
+    "write",
+    "pull_request",
+    "merge_target_branch",
+    "fastvm_provision",
+    "model_invoke",
+    "ci_execute"
+  ],
+  "budget": {
+    "wall_minutes": 240,
+    "ci_minutes": 240,
+    "model_cost_usd": 0,
+    "target_live_model_agents": 100
+  },
+  "authority": {
+    "repository": "isaacakakpo1/telnyx-meet-android",
+    "target_branch": "kmp-fast-vm-test",
+    "merge_allowed": true,
+    "upstream_write_allowed": false,
+    "main_write_allowed": false,
+    "production_deploy_allowed": false
+  },
+  "base_commit": "3276e2887c7eced7a4dcbec7f726d7eb0f3d2574"
+}
