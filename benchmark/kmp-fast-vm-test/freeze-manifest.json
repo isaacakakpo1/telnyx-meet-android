@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "benchmark_id": "telnyx-meet-kmp-fastvm-v1",
+  "repository_ref": "https://github.com/isaacakakpo1/telnyx-meet-android",
+  "upstream_ref": "https://github.com/team-telnyx/telnyx-meet-android",
+  "base_commit": "3276e2887c7eced7a4dcbec7f726d7eb0f3d2574",
+  "target_branch": "kmp-fast-vm-test",
+  "mission_brief_sha256": "daf40796b3217f806193143f49073a8a34126175e7dfe5052d915e2d4cb0a721",
+  "acceptance_gates_sha256": "1f5d6fbdd844827cd4b01a1d937d28eea63cbc6fb8de51b4ebd8b7730bc5e9e2",
+  "readiness": "execution_ready",
+  "readiness_blocking_gates": [],
+  "competitive_contract_status": "awaiting_same_workload_afk_baseline",
+  "mutation_rule": "Any change to the mission or acceptance-gate digest creates a new benchmark version."
+}

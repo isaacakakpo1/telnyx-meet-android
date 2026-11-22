@@ -1,0 +1,428 @@
+{
+  "acceptance_gate_coverage": {
+    "android-build-and-tests": [
+      "impl-android-meeting-engine-adapter"
+    ],
+    "branch-isolation": [
+      "impl-credential-hygiene-architecture-guards-ci-docume"
+    ],
+    "common-boundary": [
+      "impl-capability-aware-shared-meeting-contract",
+      "impl-shared-compose-ui-screens-and-navigation"
+    ],
+    "coroutine-boundary": [
+      "impl-presentation-layer-structured-concurrency-statef"
+    ],
+    "credential-hygiene": [
+      "impl-credential-hygiene-architecture-guards-ci-docume"
+    ],
+    "dependency-resolution": [
+      "impl-kmp-cmp-gradle-skeleton-and-dependency-moderniza"
+    ],
+    "documentation": [
+      "impl-credential-hygiene-architecture-guards-ci-docume"
+    ],
+    "ios-simulator-build-and-tests": [
+      "impl-ios-meeting-engine-adapter-and-app-shell"
+    ],
+    "meeting-contract": [
+      "impl-capability-aware-shared-meeting-contract",
+      "impl-android-meeting-engine-adapter",
+      "impl-ios-meeting-engine-adapter-and-app-shell"
+    ],
+    "project-structure": [
+      "impl-kmp-cmp-gradle-skeleton-and-dependency-moderniza"
+    ],
+    "workflow-regression": [
+      "impl-shared-data-layer-models-ktor-rest-client-token-",
+      "impl-android-meeting-engine-adapter",
+      "impl-ios-meeting-engine-adapter-and-app-shell",
+      "impl-shared-compose-ui-screens-and-navigation"
+    ]
+  },
+  "behavior_work_package_count": 12,
+  "build_work_package_count": 5,
+  "compiler": "hive-deterministic-scout-compiler-v1",
+  "mission_id": "telnyx-meet-kmp-fastvm-v1",
+  "planning_evidence": {
+    "cleanup_complete": true,
+    "completed_scouts": 4,
+    "finished_at": "2026-11-22T00:23:38.589386+00:00",
+    "fleet_count_after": 0,
+    "outcomes": [
+      {
+        "artifact_adapter_reconciled": true,
+        "elapsed_ms": 286026,
+        "model_and_guest_elapsed_ms": 231427,
+        "orchestration_overhead_ms": 54599,
+        "outcome_code": "CandidateReady",
+        "task_id": "scout-architecture"
+      },
+      {
+        "artifact_adapter_reconciled": true,
+        "elapsed_ms": 279672,
+        "model_and_guest_elapsed_ms": 226629,
+        "orchestration_overhead_ms": 53043,
+        "outcome_code": "CandidateReady",
+        "task_id": "scout-behavior"
+      },
+      {
+        "artifact_adapter_reconciled": true,
+        "elapsed_ms": 223320,
+        "model_and_guest_elapsed_ms": 170060,
+        "orchestration_overhead_ms": 53260,
+        "outcome_code": "CandidateReady",
+        "task_id": "scout-build"
+      },
+      {
+        "artifact_adapter_reconciled": true,
+        "elapsed_ms": 242800,
+        "model_and_guest_elapsed_ms": 188378,
+        "orchestration_overhead_ms": 54422,
+        "outcome_code": "CandidateReady",
+        "task_id": "scout-verification"
+      }
+    ],
+    "requested_scouts": 4,
+    "started_at": "2026-11-22T00:18:50.421605+00:00",
+    "wall_elapsed_ms": 288167
+  },
+  "repository_head": "4075c19bb19928034fcf70d945bae3bdb3e1a83c",
+  "schema_version": "1.0",
+  "scout_digests": {
+    "architecture": "21601a7dcc73ac9e32fa4beb11b62b379c149f75b6917a199b82534241757649",
+    "behavior": "8d37312f552d5291e08377b25bd31f34b72292bda899e5083ad87b2596548df8",
+    "build": "3dafa44be63ae1e06768ded3666328ddd32cbfa68c31fc1e1ee40037dd639bb5",
+    "verification": "50d2597e5da35fd46fa5e4ccb1cd5627a64995fb233b5db31974a339a5974f01"
+  },
+  "tasks": [
+    {
+      "acceptance_criteria": [
+        "All six KMP source sets resolve and compile (empty modules acceptable)",
+        "Dependency resolution succeeds from a clean environment without legacy unavailable artifacts",
+        "Kotlin/AGP/Gradle versions are declared once in the version catalog"
+      ],
+      "acceptance_gate_ids": [
+        "dependency-resolution",
+        "project-structure"
+      ],
+      "budget": {
+        "ci_minutes": 30,
+        "model_cost_usd": 0,
+        "wall_minutes": 45
+      },
+      "dependencies": [],
+      "expected_read_set": [
+        "settings.gradle",
+        "build.gradle",
+        "versions.gradle",
+        "gradle.properties",
+        "gradle/wrapper/gradle-wrapper.properties",
+        "app/build.gradle",
+        "benchmark/kmp-fast-vm-test/mission-brief.json",
+        "benchmark/kmp-fast-vm-test/acceptance-gates.json"
+      ],
+      "expected_tests": [
+        "Clean-checkout Gradle builds for common/Android/iOS targets; dependency-resolution gate proving org.webrtc:google-webrtc:1.0.32006 and jcenter()/mavenLocal() are absent from the graph; source-set existence check mirroring the mission's project-structure gate."
+      ],
+      "expected_write_set": [
+        "settings.gradle.kts",
+        "build.gradle.kts",
+        "gradle/libs.versions.toml",
+        "gradle/wrapper/gradle-wrapper.properties",
+        "gradle.properties",
+        "shared/build.gradle.kts",
+        "composeApp/build.gradle.kts"
+      ],
+      "objective": "Create the Kotlin Multiplatform + Compose Multiplatform Gradle layout (shared + composeApp modules with commonMain/commonTest/androidMain/androidUnitTest/iosMain/iosTest), upgrade wrapper/Kotlin/AGP coherently, and remove jcenter/mavenLocal reliance so the legacy unavailable WebRTC/libyuv artifacts are no longer required.",
+      "task_id": "impl-kmp-cmp-gradle-skeleton-and-dependency-moderniza"
+    },
+    {
+      "acceptance_criteria": [
+        "No retrofit2.Call or Gson types remain in shared code",
+        "All endpoints return suspend/Flow results",
+        "DTO field names preserve API contract (e.g., recort_type typo is handled at mapping only)"
+      ],
+      "acceptance_gate_ids": [
+        "workflow-regression"
+      ],
+      "budget": {
+        "ci_minutes": 30,
+        "model_cost_usd": 0,
+        "wall_minutes": 45
+      },
+      "dependencies": [
+        "impl-kmp-cmp-gradle-skeleton-and-dependency-moderniza"
+      ],
+      "expected_read_set": [
+        "app/src/main/java/com/telnyx/meet/data/RoomService.kt",
+        "app/src/main/java/com/telnyx/meet/data/model",
+        "app/src/main/java/com/telnyx/meet/data/model/request",
+        "app/src/main/java/com/telnyx/meet/data/model/response",
+        "app/src/main/java/com/telnyx/meet/di/NetworkModule.kt",
+        "app/src/main/java/com/telnyx/meet/di/AppModule.kt"
+      ],
+      "expected_tests": [
+        "commonTest coverage: one JSON contract test per endpoint payload (rooms list pagination, create room, error body, create/refresh token), Ktor MockEngine request-shape tests (headers, paths), and unit tests for repository paging behavior (WP-S7 logic)."
+      ],
+      "expected_write_set": [
+        "shared/src/commonMain/kotlin/**/data/**",
+        "shared/src/commonMain/kotlin/**/domain/**",
+        "shared/src/commonTest/kotlin/**/data/**",
+        "shared/src/commonTest/kotlin/**/domain/**"
+      ],
+      "objective": "Port the 5-endpoint Rooms API and Gson DTOs to Ktor client + kotlinx.serialization with suspend functions, plus repository/use-case boundaries; replace BuildConfig-based auth with an injected credential provider.",
+      "task_id": "impl-shared-data-layer-models-ktor-rest-client-token-"
+    },
+    {
+      "acceptance_criteria": [
+        "Contract compiles on all targets",
+        "Capability states are explicit and exhaustive",
+        "Fake engine passes all shared contract tests"
+      ],
+      "acceptance_gate_ids": [
+        "common-boundary",
+        "meeting-contract"
+      ],
+      "budget": {
+        "ci_minutes": 30,
+        "model_cost_usd": 0,
+        "wall_minutes": 45
+      },
+      "dependencies": [
+        "impl-kmp-cmp-gradle-skeleton-and-dependency-moderniza"
+      ],
+      "expected_read_set": [
+        "app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt",
+        "app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt",
+        "app/src/main/java/com/telnyx/meet/ui/SharingFullScreenFragment.kt",
+        "benchmark/kmp-fast-vm-test/acceptance-gates.json"
+      ],
+      "expected_tests": [
+        "commonTest: fake-engine state-machine tests (connect/disconnect/disconnected navigation), capability matrix coverage for the seven features, effect-buffering tests, and contract conformance tests both adapters must satisfy."
+      ],
+      "expected_write_set": [
+        "shared/src/commonMain/kotlin/**/meeting/**",
+        "shared/src/commonTest/kotlin/**/meeting/**"
+      ],
+      "objective": "Define the single MeetingEngine/MeetingSession contract (connect, publish, subscribe, chat, stats, capabilities) with StateFlow state, SharedFlow effects, and a per-feature capability model so Android and iOS engines are substitutable.",
+      "task_id": "impl-capability-aware-shared-meeting-contract"
+    },
+    {
+      "acceptance_criteria": [
+        "Adapter satisfies WP-3 contract tests on the Android target",
+        "Android source sets import no shared-forbidden types (no LiveData/Retrofit in commonMain consumers)",
+        "Legacy vendored WrapGridLayoutManager duplicate is removed or migrated"
+      ],
+      "acceptance_gate_ids": [
+        "android-build-and-tests",
+        "meeting-contract",
+        "workflow-regression"
+      ],
+      "budget": {
+        "ci_minutes": 30,
+        "model_cost_usd": 0,
+        "wall_minutes": 45
+      },
+      "dependencies": [
+        "impl-capability-aware-shared-meeting-contract"
+      ],
+      "expected_read_set": [
+        "app/build.gradle",
+        "app/src/main/AndroidManifest.xml",
+        "app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt",
+        "app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt",
+        "app/src/main/java/com/telnyx/meet/ui/adapters/ParticipantTileAdapter.kt",
+        "app/src/main/java/com/telnyx/meet/ui/SharingFullScreenFragment.kt",
+        "app/src/main/java/com/telnyx/video/sdk/ui/adapters/WrapGridLayoutManager.kt"
+      ],
+      "expected_tests": [
+        "androidUnitTest for adapter mapping (events to shared state, capability reporting, audio routing enum mapping); reuse ManageRoomDetailsActivityTest scenarios as the regression checklist mapped to the new UI (execution deferred to WP-8 CI device farm per tests.yml: Pixel 2 / API 29)."
+      ],
+      "expected_write_set": [
+        "shared/src/androidMain/kotlin/**",
+        "shared/src/androidUnitTest/**"
+      ],
+      "objective": "Implement the shared contract on Android by wrapping the Telnyx Android SDK (Room/PublishConfigHelper/TelnyxVideoProcessing) with permission, audio-routing, lifecycle, and rendering glue; no Android types above the adapter.",
+      "task_id": "impl-android-meeting-engine-adapter"
+    },
+    {
+      "acceptance_criteria": [
+        "ios-simulator-build-and-tests gate passes",
+        "Capability matrix rows for iOS are populated with verified statuses",
+        "No iOS-only APIs leak into commonMain"
+      ],
+      "acceptance_gate_ids": [
+        "ios-simulator-build-and-tests",
+        "meeting-contract",
+        "workflow-regression"
+      ],
+      "budget": {
+        "ci_minutes": 30,
+        "model_cost_usd": 0,
+        "wall_minutes": 45
+      },
+      "dependencies": [
+        "impl-capability-aware-shared-meeting-contract"
+      ],
+      "expected_read_set": [
+        "benchmark/kmp-fast-vm-test/mission-brief.json",
+        "benchmark/kmp-fast-vm-test/acceptance-gates.json",
+        "shared/src/commonMain/kotlin/**/meeting/**"
+      ],
+      "expected_tests": [
+        "iosTest simulator suite: adapter contract tests, capability-gap tests proving unsupported features report unavailable (not simulated), and lifecycle tests (background/foreground disconnect/reconnect semantics)."
+      ],
+      "expected_write_set": [
+        "shared/src/iosMain/kotlin/**",
+        "shared/src/iosTest/**",
+        "shared/build.gradle.kts",
+        "iosApp/**"
+      ],
+      "objective": "Implement the same contract on iOS through the Telnyx iOS SDK via CocoaPods/Objective-C interop, build the iosApp shell (MainViewController), and publish honest capability states for anything the iOS SDK does not support.",
+      "task_id": "impl-ios-meeting-engine-adapter-and-app-shell"
+    },
+    {
+      "acceptance_criteria": [
+        "All seven workflows render from shared Compose with no Android/UIKit imports in commonMain",
+        "Safe-args payloads (participantName, roomId, roomName, refreshToken, refreshTime) preserved in the route model",
+        "Visual parity checklist against app/src/main/res/layout screens recorded in docs"
+      ],
+      "acceptance_gate_ids": [
+        "common-boundary",
+        "workflow-regression"
+      ],
+      "budget": {
+        "ci_minutes": 30,
+        "model_cost_usd": 0,
+        "wall_minutes": 45
+      },
+      "dependencies": [
+        "impl-shared-data-layer-models-ktor-rest-client-token-",
+        "impl-capability-aware-shared-meeting-contract",
+        "impl-presentation-layer-structured-concurrency-statef"
+      ],
+      "expected_read_set": [
+        "app/src/main/java/com/telnyx/meet/ui",
+        "app/src/main/res/layout",
+        "app/src/main/res/navigation/navigation_main.xml",
+        "app/src/main/res/menu/room_menu.xml",
+        "app/src/main/res/values/strings.xml",
+        "app/src/main/java/com/telnyx/meet/BaseFragment.kt"
+      ],
+      "expected_tests": [
+        "Compose UI tests for each screen (state rendering, event dispatch), navigation route tests, and a boundary scan proving no android.* or UIKit imports in composeApp commonMain."
+      ],
+      "expected_write_set": [
+        "composeApp/src/commonMain/kotlin/**/ui/**",
+        "composeApp/src/commonMain/kotlin/**/navigation/**",
+        "composeApp/src/commonMain/composeResources/**",
+        "composeApp/src/androidMain/**",
+        "composeApp/src/iosMain/**",
+        "composeApp/src/commonTest/kotlin/**/ui/**",
+        "composeApp/src/commonTest/kotlin/**/navigation/**"
+      ],
+      "objective": "Rebuild the seven workflows (join, room list, room create, meeting, chat, participants, fullscreen share) as shared Compose screens driven by shared presenters, with a shared route model consumed by platform navigators.",
+      "task_id": "impl-shared-compose-ui-screens-and-navigation"
+    },
+    {
+      "acceptance_criteria": [
+        "No unmanaged CoroutineScope creation in shared presentation",
+        "Screen state is StateFlow; one-off effects have explicit buffered delivery and lifecycle cancellation",
+        "Common unit tests pass without Android runtime"
+      ],
+      "acceptance_gate_ids": [
+        "coroutine-boundary"
+      ],
+      "budget": {
+        "ci_minutes": 30,
+        "model_cost_usd": 0,
+        "wall_minutes": 45
+      },
+      "dependencies": [
+        "impl-shared-data-layer-models-ktor-rest-client-token-",
+        "impl-capability-aware-shared-meeting-contract"
+      ],
+      "expected_read_set": [
+        "app/src/main/java/com/telnyx/meet/BaseViewModel.kt",
+        "app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt",
+        "app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt",
+        "app/src/main/java/com/telnyx/meet/ui/RoomListFragment.kt",
+        "app/src/main/java/com/telnyx/meet/ui/SharingFullScreenFragment.kt",
+        "app/src/main/java/com/telnyx/meet/ui/utilities/Utils.kt"
+      ],
+      "expected_tests": [
+        "kotlinx-coroutines-test suites: token-refresh scheduling at 90% expiry (replacing CoroutineScope(Dispatchers.Main).launch in RoomFragment.startCounter), stats-polling cancellation, effect replay/buffering semantics, and LiveData-to-StateFlow behavior parity tests for room list, creation, and chat flows."
+      ],
+      "expected_write_set": [
+        "shared/src/commonMain/kotlin/**/presentation/**",
+        "shared/src/commonTest/kotlin/**/presentation/**"
+      ],
+      "objective": "Decompose RoomsViewModel into per-screen presenters with StateFlow state, one-shot buffered effects, and lifecycle-owned scopes; move the token-refresh timer and stats polling behind structured coroutine owners.",
+      "task_id": "impl-presentation-layer-structured-concurrency-statef"
+    },
+    {
+      "acceptance_criteria": [
+        "credential-hygiene gate passes with secret-free examples",
+        "Architecture/static scans wired into CI",
+        "Docs cover build, test, capability matrix, and migration notes"
+      ],
+      "acceptance_gate_ids": [
+        "branch-isolation",
+        "credential-hygiene",
+        "documentation"
+      ],
+      "budget": {
+        "ci_minutes": 30,
+        "model_cost_usd": 0,
+        "wall_minutes": 45
+      },
+      "dependencies": [
+        "impl-kmp-cmp-gradle-skeleton-and-dependency-moderniza"
+      ],
+      "expected_read_set": [
+        "local.properties",
+        "github.properties",
+        ".gitignore",
+        ".github/workflows/firebase.yml",
+        ".github/workflows/code_quality.yml",
+        "app/build.gradle",
+        "app/src/main/AndroidManifest.xml",
+        "README.md",
+        "tests.yml"
+      ],
+      "expected_tests": [
+        "Credential scan over git history and index proving local.properties/github.properties are untracked and values never appear in evidence; architecture gate scanning commonMain for forbidden imports (android.*, UIKit, retrofit2.Call, LiveData, GlobalScope); CI matrix for Android assemble/test and iOS simulator test; documentation review checklist against mission-brief.json evidence_requirements."
+      ],
+      "expected_write_set": [
+        ".gitignore",
+        ".github/workflows/**",
+        "docs/**",
+        "README.md",
+        "local.properties.example"
+      ],
+      "objective": "Untrack and replace credential-bearing local files with documented environment/local configuration, add boundary scanners and CI for both platforms, and deliver the required docs (architecture overview, capability matrix, build/test instructions, migration notes).",
+      "task_id": "impl-credential-hygiene-architecture-guards-ci-docume"
+    }
+  ],
+  "topological_order": [
+    "impl-kmp-cmp-gradle-skeleton-and-dependency-moderniza",
+    "impl-capability-aware-shared-meeting-contract",
+    "impl-android-meeting-engine-adapter",
+    "impl-credential-hygiene-architecture-guards-ci-docume",
+    "impl-ios-meeting-engine-adapter-and-app-shell",
+    "impl-shared-data-layer-models-ktor-rest-client-token-",
+    "impl-presentation-layer-structured-concurrency-statef",
+    "impl-shared-compose-ui-screens-and-navigation"
+  ],
+  "write_conflicts": [
+    {
+      "left": "impl-kmp-cmp-gradle-skeleton-and-dependency-moderniza",
+      "ordered_by_dependency": true,
+      "path_overlaps": [
+        "shared/build.gradle.kts <> shared/build.gradle.kts"
+      ],
+      "right": "impl-ios-meeting-engine-adapter-and-app-shell"
+    }
+  ]
+}

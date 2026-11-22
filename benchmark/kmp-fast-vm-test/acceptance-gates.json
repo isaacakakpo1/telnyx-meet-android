@@ -1,0 +1,68 @@
+{
+  "schema_version": "1.0",
+  "suite_id": "telnyx-meet-kmp-acceptance-v1",
+  "base_commit": "3276e2887c7eced7a4dcbec7f726d7eb0f3d2574",
+  "required_checks": [
+    {
+      "id": "project-structure",
+      "kind": "architecture",
+      "proves": "Kotlin Multiplatform source sets and shared Compose application structure exist"
+    },
+    {
+      "id": "common-boundary",
+      "kind": "architecture",
+      "proves": "commonMain has no Android or UIKit implementation dependencies"
+    },
+    {
+      "id": "coroutine-boundary",
+      "kind": "static-and-unit",
+      "proves": "shared async work uses structured coroutines, StateFlow, and bounded effects"
+    },
+    {
+      "id": "android-build-and-tests",
+      "kind": "platform",
+      "proves": "Android application and adapter compile and pass tests"
+    },
+    {
+      "id": "ios-simulator-build-and-tests",
+      "kind": "platform",
+      "proves": "iOS application and adapter compile and pass simulator tests"
+    },
+    {
+      "id": "meeting-contract",
+      "kind": "contract",
+      "proves": "both platform engines implement one capability-aware shared meeting contract"
+    },
+    {
+      "id": "workflow-regression",
+      "kind": "integration",
+      "proves": "room and meeting workflows preserve supported Android behavior and honest iOS fallbacks"
+    },
+    {
+      "id": "dependency-resolution",
+      "kind": "supply-chain",
+      "proves": "clean dependency resolution does not require unavailable legacy artifacts"
+    },
+    {
+      "id": "credential-hygiene",
+      "kind": "security",
+      "proves": "credential-bearing local files are untracked, ignored, and absent from generated evidence"
+    },
+    {
+      "id": "branch-isolation",
+      "kind": "delivery",
+      "proves": "only the fork's kmp-fast-vm-test branch was mutated"
+    },
+    {
+      "id": "documentation",
+      "kind": "review",
+      "proves": "architecture, capability, build, test, and migration documentation is complete"
+    }
+  ],
+  "hidden_suite": {
+    "required": true,
+    "body_location": "sealed outside the candidate repository",
+    "digest_status": "pending-baseline-freeze",
+    "rule": "The same sealed suite and digest must be used for the AFK baseline and Hive run."
+  }
+}

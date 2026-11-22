@@ -1,0 +1,374 @@
+{
+  "schema_version": "1.0",
+  "task_id": "scout-build",
+  "assignment_id": "assignment-scout-build-eaf72b89",
+  "candidate_id": "candidate-scout-build-eaf72b89",
+  "run_id": "scout-build-eaf72b89",
+  "generated_at_utc": "2026-11-22",
+  "scope": {
+    "inspected": "Gradle, dependency, CI, and credential-hygiene constraints only. No migration code was implemented.",
+    "write_set": [
+      "benchmark/kmp-fast-vm-test/scouts/build.json"
+    ],
+    "frozen_inputs_untouched": [
+      "benchmark/kmp-fast-vm-test/mission-brief.json",
+      "benchmark/kmp-fast-vm-test/acceptance-gates.json",
+      "benchmark/kmp-fast-vm-test/freeze-manifest.json",
+      "benchmark/kmp-fast-vm-test/README.md"
+    ],
+    "secret_policy": "No secret value is copied into this evidence. Credentials are referenced by key name only (API_KEY, ROOM_ID, sdk.dir, gpr.usr, gpr.key); values are treated as exposed and redacted everywhere.",
+    "verification": {
+      "json_parses": "validated with python3 -m json.tool before finalizing",
+      "citation_policy": "Every build and CI claim cites a repository path; external Maven Central / Google Maven 404s for the legacy artifacts were re-verified at scout time."
+    }
+  },
+  "sources_consulted": [
+    "build.gradle",
+    "settings.gradle",
+    "versions.gradle",
+    "gradle.properties",
+    "gradle/wrapper/gradle-wrapper.properties",
+    "app/build.gradle",
+    "app/src/main/java/com/telnyx/meet/di/NetworkModule.kt (BuildConfig.API_KEY consumer)",
+    ".gitignore",
+    "local.properties (key names only; values redacted)",
+    "github.properties (key names only; values redacted)",
+    ".github/workflows/code_quality.yml",
+    ".github/workflows/firebase.yml",
+    ".github/dependabot.yml",
+    ".github/pull_request_template.md",
+    "tests.yml",
+    "benchmark/kmp-fast-vm-test/README.md (baseline claim: build fails before tests on unavailable WebRTC/libyuv artifacts)",
+    "JitPack POM for com.github.team-telnyx:telnyx-meet-android-sdk:0.3.1 (fetched to enumerate transitive coordinates)"
+  ],
+  "current_build_blockers": [
+    {
+      "id": "B1",
+      "title": "Unresolvable transitive WebRTC artifact",
+      "artifact": "org.webrtc:google-webrtc:1.0.32006",
+      "evidence": "app/build.gradle:94 pins com.github.team-telnyx:telnyx-meet-android-sdk:0.3.1@aar (JitPack); the SDK POM declares org.webrtc:google-webrtc:1.0.32006 compile-scoped. versions.gradle:13,71 declares deps.webrtc but app/build.gradle never uses it directly - it arrives transitively. App code imports org.webrtc.*: ParticipantTileAdapter.kt:13-14, RoomsViewModel.kt:38-39, RoomFragment.kt:41-42, SharingFullScreenFragment.kt:21, layouts participant_tile_item.xml:19, room_fragment.xml:38, sharing_full_screen.xml:9.",
+      "status": "Not resolvable from Maven Central or Google Maven (404 verified at scout time); historically hosted on JCenter, which is retired. Build fails at dependency resolution before any task runs.",
+      "honest_blocker_note": "This cannot be fixed by adding repositories alone. It requires one of: SDK upgrade to a maintained release, a class-compatible substitute, or self-hosting the exact artifacts. App imports of org.webrtc.* must keep compiling (or be migrated with the adapter) whichever option is chosen."
+    },
+    {
+      "id": "B2",
+      "title": "Unresolvable transitive libyuv artifact",
+      "artifact": "io.github.zncmn.libyuv:core:0.0.8",
+      "evidence": "Same SDK POM (compile scope); no direct references in app source (grep across repository shows zero app-side libyuv imports).",
+      "status": "Not resolvable from Maven Central (404 verified); historically hosted on JCenter, which is retired.",
+      "honest_blocker_note": "Rides along with whichever fix is chosen for B1. Because no app code references libyuv directly, a resolvable replacement for the SDK's frame-processing dependency carries lower risk than B1, but the SDK's compiled code must still be able to load it."
+    },
+    {
+      "id": "B3",
+      "title": "Configuration-time hard loads of credential files",
+      "evidence": "build.gradle:33-34 loads github.properties via FileInputStream unconditionally at configuration time; app/build.gradle:10-11 loads local.properties unconditionally; app/build.gradle:36-41 throws GradleException if local.properties is unreadable.",
+      "status": "A clean checkout without either file cannot even configure. Today this is masked only because both files are tracked in git (see B6).",
+      "honest_blocker_note": "Fixing credential hygiene (B6) without making these loads conditional would break CI and fresh clones; the two fixes must land together or in that order."
+    },
+    {
+      "id": "B4",
+      "title": "Toolchain inconsistencies",
+      "evidence": [
+        "gradle/wrapper/gradle-wrapper.properties:4 pins Gradle 7.2 while AGP 7.1.3 (build.gradle:17, versions.gradle:4) sits at its minimum; no headroom for Kotlin Multiplatform / Compose Multiplatform plugins.",
+        "Two Kotlin Gradle plugin versions on one buildscript classpath: 1.8.22 (build.gradle:3,18) and 1.5.10 via deps.kotlin.plugin (build.gradle:25; versions.gradle:7,95). Gradle silently resolves the conflict; the catalog must unify this.",
+        "compileSdkVersion 34 (app/build.gradle:14) exceeds what AGP 7.1.3 supports (max 32); needs AGP 8.x or an explicit suppression flag. buildToolsVersion \"30.0.3\" (app/build.gradle:15) is stale.",
+        "Dynamic versions break reproducibility: com.bugsnag:bugsnag-android-gradle-plugin:5.+ (build.gradle:22; versions.gradle:58), com.bugsnag:bugsnag-android:5.+ (also transitive via SDK POM), androidx.core:core-ktx:+ (app/build.gradle:168).",
+        "jcenter() repositories (build.gradle:8,41) are retired; mavenLocal() (build.gradle:43) and duplicated JitPack blocks (build.gradle:10,12,44) undermine reproducibility; resolutionStrategy.force objenesis (build.gradle:48-50) is a band-aid.",
+        "Duplicate Material versions: deps.material 1.2.1 (versions.gradle:11,68) vs hard-coded 1.6.0 (app/build.gradle:130).",
+        "kapt (app/build.gradle:4) with Hilt 2.48 (versions.gradle:24); dagger 2.16 entries exist but are unused (versions.gradle:152-157); versions.kotlin=1.5.10 mixed with kotlin-stdlib-jdk7:1.8.22 (app/build.gradle:169)."
+      ],
+      "status": "None of these alone blocks resolution today, but each is a reproducibility or future-compatibility hazard that must be resolved before or with the KMP migration."
+    },
+    {
+      "id": "B5",
+      "title": "CI gaps and deprecations",
+      "evidence": ".github/workflows/firebase.yml:15,56 use retired runner ubuntu-18.04; .github/workflows/firebase.yml:29-32 writes secrets.API_KEY into the still-tracked local.properties (leaves ROOM_ID/sdk.dir from the committed file); firebase workflow triggers only on push/PR to main (PRs from other branches get no build); code_quality.yml runs Qodana only (no build/test) with qodana-action@v5.1.0 and codeql-action upload-sarif@v1; checkout@v3, upload-artifact@v3, download-artifact@v2.0.10 are deprecated. No unit-test, dependency-resolution, secret-scan, architecture, or iOS workflow exists. No macOS runner usage (nothing can build iOS today).",
+      "status": "CI currently proves neither a working build nor any of the acceptance gates; the KMP migration needs the matrix below."
+    },
+    {
+      "id": "B6",
+      "title": "Credential exposure in version control",
+      "evidence": "git ls-files tracks local.properties and github.properties despite .gitignore:24 listing local.properties (ignore rules do not untrack committed files; github.properties is not in .gitignore at all). local.properties carries API_KEY, ROOM_ID, sdk.dir; values are non-placeholder-shaped and must be treated as exposed, with an earlier 11-char API_KEY value visible at commit b520ec2 (chore: add local property). github.properties carries gpr.usr/gpr.key and currently holds only <GPR_USR>/<GPR_KEY> placeholders, but the tracked-credentials pattern must not survive the migration. The API key is additionally baked into BuildConfig and a string resource: app/build.gradle:44-46 (release) and :54-56 (debug) buildConfigField API_KEY + resValue('string','api_key',...), consumed by NetworkModule.kt:29 (BuildConfig.API_KEY).",
+      "status": "Rotation of the Telnyx API key is mandatory (history cannot be silently rewritten out of scope); no values are reproduced in this evidence."
+    }
+  ],
+  "safe_kmp_compose_module_topology": {
+    "principle": "Module boundaries mirror the mission's capability-aware meeting contract; commonMain stays free of android.*, java.*, UIKit, and org.webrtc imports; platform SDKs enter only through expect/actual adapters and platform source sets.",
+    "modules": [
+      {
+        "path": ":composeApp",
+        "kind": "KMP application (androidTarget + iosArm64/iosX64/iosSimulatorArm64)",
+        "source_sets": ["commonMain", "commonTest", "androidMain", "androidUnitTest", "iosMain", "iosTest"],
+        "role": "Shared Compose Multiplatform UI and navigation; hosts expect declarations for the meeting engine and publishes capability state."
+      },
+      {
+        "path": ":core:meeting-contract",
+        "kind": "pure KMP library",
+        "role": "Capability-aware meeting contract: suspend/Flow APIs, StateFlow UI state, buffered one-off effects; no platform imports."
+      },
+      {
+        "path": ":core:models",
+        "kind": "pure KMP library",
+        "role": "Shared domain models and validation."
+      },
+      {
+        "path": ":core:network",
+        "kind": "KMP library",
+        "role": "Ktor client + kotlinx.serialization; repositories as interfaces; no Retrofit/Gson in common code."
+      },
+      {
+        "path": ":core:designsystem",
+        "kind": "KMP library",
+        "role": "Shared Compose theme and components (org.jetbrains.compose)."
+      },
+      {
+        "path": ":feature:meet-android",
+        "kind": "Android library",
+        "role": "androidMain actual of the meeting engine over the Telnyx Android video SDK; owns camera, audio, lifecycle, permission, screen-share integration."
+      },
+      {
+        "path": ":iosApp",
+        "kind": "Xcode shell + iosMain actual",
+        "role": "iOS app consuming the shared framework; TelnyxVideoSdk pod via KMP CocoaPods interop; owns permission, audio-session, camera integration."
+      }
+    ],
+    "android_entry": "Keep the legacy :app (ViewBinding/Fragments) as an interim regression shell until :composeApp reaches workflow parity; acceptance gates then run against :composeApp. This preserves supported Android behavior while the shared UI is built.",
+    "targets": ["android", "iosSimulatorArm64", "iosX64", "iosArm64"],
+    "constraints": [
+      "commonMain forbids android.*, java.*, org.webrtc imports (architecture gate from acceptance-gates.json: common-boundary).",
+      "No LiveData, Retrofit callbacks, GlobalScope, or unmanaged CoroutineScope in common production code (coroutine-boundary gate).",
+      "settings.gradle must move to pluginManagement + dependencyResolutionManagement (FAIL_ON_PROJECT_REPOS) so module repositories stay pinned centrally."
+    ]
+  },
+  "dependency_substitutions_or_abstractions": [
+    {
+      "id": "D1",
+      "targets": ["org.webrtc:google-webrtc:1.0.32006 (B1)", "io.github.zncmn.libyuv:core:0.0.8 (B2)"],
+      "options": [
+        {
+          "option": "A - upgrade the consuming SDK",
+          "detail": "Move app/build.gradle:94 to a maintained Telnyx video SDK release whose POM resolves from supported repositories; verify API deltas against app usage before adopting."
+        },
+        {
+          "option": "B - class-compatible substitute",
+          "detail": "Exclude the unavailable transitives from the SDK dependency and substitute a resolvable, maintained org.webrtc-compatible build; must verify package/class compatibility with the SDK's compiled code before acceptance (silent behavioral drift is the risk)."
+        },
+        {
+          "option": "C - self-host exact artifacts",
+          "detail": "Publish the exact historical coordinates (org.webrtc:google-webrtc:1.0.32006, io.github.zncmn.libyuv:core:0.0.8) to the fork's GitHub Packages and add that repository; zero behavior change, credentials injected via CI environment (never committed - see local.properties remediation)."
+        }
+      ],
+      "recommendation": "Prefer A; fall back to C for zero behavior change; treat B as last resort. Gated by a dependency-resolution check with --refresh-dependencies so stale caches cannot mask failure."
+    },
+    {
+      "id": "D2",
+      "targets": ["bugsnag 5.+ (build.gradle:22; versions.gradle:58; SDK POM)"],
+      "detail": "Pin an exact bugsnag plugin and client version in gradle/libs.versions.toml; verify plugin compatibility with the upgraded AGP before adoption."
+    },
+    {
+      "id": "D3",
+      "targets": ["androidx.core:core-ktx:+ (app/build.gradle:168)"],
+      "detail": "Pin to the catalog version; dynamic last-version selection is incompatible with the reproducibility requirement."
+    },
+    {
+      "id": "D4",
+      "targets": ["Retrofit + Gson (app/build.gradle:113-114; versions.gradle:99-102)"],
+      "detail": "Abstract repository data access behind interfaces in :core:network; implement with Ktor + kotlinx.serialization in shared code. Retrofit/Gson may remain in legacy :app only during the interim."
+    },
+    {
+      "id": "D5",
+      "targets": ["Dexter (app/build.gradle:141; versions.gradle:77)"],
+      "detail": "Android-only permission helper; replace with a capability abstraction (expect/actual or Moko Permissions) so common code depends on interfaces only and iOS can express honest capability state."
+    },
+    {
+      "id": "D6",
+      "targets": ["Kotlin plugin versions, AGP, Gradle wrapper, kapt"],
+      "detail": "Unify Kotlin plugin/stdlib on one catalog version, lift AGP to 8.x with Gradle 8.x wrapper for compileSdk 34 support, prefer KSP over kapt where Hilt supports it, and keep Compose Multiplatform (org.jetbrains.compose) pinned to the matching Kotlin release."
+    }
+  ],
+  "android_ios_build_gates": {
+    "android": {
+      "commands": [
+        "./gradlew :composeApp:assembleDebug (interim: ./gradlew :app:assembleDebug)",
+        "./gradlew :composeApp:testDebugUnitTest :app:testDebugUnitTest",
+        "./gradlew :composeApp:connectedDebugAndroidTest or Firebase Test Lab per tests.yml device spec",
+        "./gradlew ktlintCheck detekt (once plugins are catalog-managed)",
+        "./gradlew dependency-resolution gate: ./gradlew dependencies --configuration debugRuntimeClasspath --refresh-dependencies (must fail loudly on any unavailable artifact)"
+      ],
+      "requirements": "JDK 17 with AGP 8.x (or JDK 11 while AGP 7.4 interim); Android SDK 34 installed; no signing keys in CI (distribution is out of scope per mission-brief excluded_scope).",
+      "path": "app/build.gradle, :composeApp module build files (per topology)"
+    },
+    "ios": {
+      "commands": [
+        "./gradlew :composeApp:iosSimulatorArm64Test (plus iosX64Test on the matrix)",
+        "./gradlew :composeApp:podInstall / :composeApp:linkPodFrameworkDebug via KMP CocoaPods plugin for TelnyxVideoSdk",
+        "xcodebuild -workspace iosApp.xcworkspace -scheme iosApp -destination 'platform=iOS Simulator,name=iPhone' build/test"
+      ],
+      "requirements": "macOS runner (macos-15) with Xcode 16.x; CocoaPods for the TelnyxVideoSdk pod; simulator builds run without code-signing; App Store distribution remains out of scope.",
+      "path": "iosMain of :composeApp, :iosApp Xcode project"
+    },
+    "shared": [
+      "gradle/libs.versions.toml pins all toolchain versions; wrapper checksums validated.",
+      "Gradle dependency verification (checksums) for reproducible resolution from a clean environment.",
+      "Architecture checks: forbidden-import scanner for commonMain; coroutine-construction scanner."
+    ]
+  },
+  "ci_matrix": {
+    "current": [
+      {
+        "workflow": ".github/workflows/code_quality.yml",
+        "content": "Qodana static scan on pull_request + push to main/releases; ubuntu-latest; SARIF upload via codeql-action@v1. No build, no tests."
+      },
+      {
+        "workflow": ".github/workflows/firebase.yml",
+        "content": "apk job (ubuntu-18.04, JDK 11): writes API_KEY from secrets into local.properties, assembleDebug, assembleDebugAndroidTest, uploads artifacts. firebase job: runs instrumented UI tests via asadmansr/Firebase-Test-Lab-Action@v1.0 with SERVICE_ACCOUNT secret against tests.yml device spec (Pixel2, API 29, en, portrait). Triggers only on push/PR to main."
+      }
+    ],
+    "proposed": {
+      "triggers": "pull_request (all branches) + push to main and kmp-fast-vm-test",
+      "jobs": [
+        "dependency-resolution: warm Gradle cache, ./gradlew help + classpath resolution with --refresh-dependencies; fails on any unavailable artifact (proves acceptance-gates dependency-resolution).",
+        "android-build: ubuntu-latest, JDK 17, assembleDebug + unit tests + lint/ktlint/detekt + architecture checks (proves android-build-and-tests, project-structure, common-boundary, coroutine-boundary).",
+        "android-instrumentation: Firebase Test Lab on main (tests.yml spec), hosted emulator on PRs (proves workflow-regression).",
+        "ios-simulator: macos-15, Xcode 16, iosSimulatorArm64Test + iosApp xcodebuild (proves ios-simulator-build-and-tests, meeting-contract).",
+        "static-analysis: upgraded Qodana + SARIF upload (proves documentation/review assist).",
+        "secret-scan: gitleaks history scan + tracked-credentials check that fails if local.properties/github.properties are ever committed again (proves credential-hygiene).",
+        "branch-isolation: asserts only the fork's kmp-fast-vm-test branch was mutated (proves branch-isolation)."
+      ],
+      "action_pins": "actions/checkout@v4, setup-java@v4 (temurin 17), gradle/actions/setup-gradle@v4 (cache), upload/download-artifact@v4; retire ubuntu-18.04 runners; keep tests.yml as the Firebase device matrix and extend API levels there.",
+      "secrets": "API_KEY, ROOM_ID, SERVICE_ACCOUNT, GitHub Packages credentials passed via environment variables only; no step may echo secret values into logs or write them to tracked files (replaces .github/workflows/firebase.yml:29-32 pattern with a write to the now-untracked local.properties, or preferably Gradle properties/env)."
+    }
+  },
+  "local_properties_remediation": [
+    {
+      "step": 1,
+      "action": "Untrack credential files",
+      "detail": "git rm --cached local.properties github.properties (keep working copies; no history rewrite in scope). Values already in git history - including the earlier 11-char API_KEY at commit b520ec2 - remain exposed there.",
+      "paths": ["local.properties", "github.properties"]
+    },
+    {
+      "step": 2,
+      "action": "Ignore the paths going forward",
+      "detail": "Extend .gitignore (line 24 already lists local.properties) with github.properties, google-services.json, *.jks, *.keystore, .env so the pattern covers all credential channels.",
+      "paths": [".gitignore"]
+    },
+    {
+      "step": 3,
+      "action": "Provide secret-free examples and docs",
+      "detail": "Add local.properties.example and github.properties.example with <REDACTED>-style placeholders and a docs guide on obtaining Telnyx API keys and room IDs. No real values in any example.",
+      "paths": ["local.properties.example", "github.properties.example", "docs/"]
+    },
+    {
+      "step": 4,
+      "action": "Rotate exposed credentials",
+      "detail": "Treat committed API_KEY/ROOM_ID values as compromised and rotate the Telnyx API key via the portal. Rotation is mandatory because git history retains earlier values; history rewriting is out of scope for the fork.",
+      "paths": []
+    },
+    {
+      "step": 5,
+      "action": "Make configuration-time loads conditional",
+      "detail": "build.gradle:33-34 and app/build.gradle:10-11,36-41 must tolerate missing files and fall back to Gradle properties or environment variables (CI passes API_KEY/ROOM_ID via env). Remove resValue('string','api_key',...) (app/build.gradle:46,55) so the key stops landing in merged resources; prefer runtime injection into NetworkModule (app/src/main/java/com/telnyx/meet/di/NetworkModule.kt:29) through a config provider.",
+      "paths": ["build.gradle", "app/build.gradle", "app/src/main/java/com/telnyx/meet/di/NetworkModule.kt"]
+    },
+    {
+      "step": 6,
+      "action": "Gate it in CI",
+      "detail": "Secret-scan job fails the build if tracked credential files reappear; evidence records git ls-files proving untracked state. No secret value ever enters reports, examples, or this file.",
+      "paths": [".github/workflows/"]
+    }
+  ],
+  "work_packages": [
+    {
+      "id": "WP-B1",
+      "order": 1,
+      "title": "Toolchain foundation",
+      "objective": "Gradle 8.x wrapper, pluginManagement + dependencyResolutionManagement, version catalog (gradle/libs.versions.toml) unifying Kotlin/AGP/bugsnag pins, removal of jcenter()/mavenLocal()/duplicate repositories, removal of the unconditional github.properties load (B3 root half), Compose Multiplatform + KMP plugin pins prepared.",
+      "write_path_prefixes": [
+        "gradle/",
+        "gradlew",
+        "gradlew.bat",
+        "settings.gradle*",
+        "build.gradle*",
+        "gradle.properties",
+        "build-logic/"
+      ],
+      "blockers_addressed": ["B3 (root build.gradle)", "B4"],
+      "exit_gates": "./gradlew help succeeds on a clean checkout without github.properties; version catalog is the single source of toolchain versions.",
+      "depends_on": []
+    },
+    {
+      "id": "WP-B2",
+      "order": 2,
+      "title": "Credential hygiene and local configuration remediation",
+      "objective": "Untrack local.properties/github.properties from the index, extend .gitignore, ship example files, document the rotation requirement and the env-based injection contract (remediation steps 1-4).",
+      "write_path_prefixes": [
+        ".gitignore",
+        "local.properties.example",
+        "github.properties.example",
+        "docs/"
+      ],
+      "blockers_addressed": ["B6 (tracking + examples + rotation doc)"],
+      "exit_gates": "git ls-files shows neither credential file tracked; examples contain only placeholders; rotation documented.",
+      "depends_on": ["WP-B1"]
+    },
+    {
+      "id": "WP-B3",
+      "order": 3,
+      "title": "Dependency resolution and app configuration hardening",
+      "objective": "Resolve B1/B2 via the recommended option (D1) for app/build.gradle:94, pin bugsnag and core-ktx (D2/D3), unify Material versions, remove resValue api_key and make the local.properties load conditional (B3 app half), prepare the dependency-resolution gate.",
+      "write_path_prefixes": [
+        "app/"
+      ],
+      "blockers_addressed": ["B1", "B2", "B3 (app/build.gradle)", "B4 (app-level dynamic versions, Material duplication)"],
+      "exit_gates": "Classpath resolves with --refresh-dependencies on clean caches; org.webrtc.* app code compiles; assembleDebug succeeds.",
+      "depends_on": ["WP-B1", "WP-B2"]
+    },
+    {
+      "id": "WP-B4",
+      "order": 4,
+      "title": "CI matrix and quality gates",
+      "objective": "Implement the proposed matrix, retire ubuntu-18.04, pin modern actions, wire secret-scan/dependency-resolution/architecture/iOS jobs, keep secrets out of tracked files (remediation steps 5-6 wiring), extend tests.yml device matrix.",
+      "write_path_prefixes": [
+        ".github/",
+        "tests.yml"
+      ],
+      "blockers_addressed": ["B5", "credential-in-CI pattern from B6"],
+      "exit_gates": "All proposed jobs green on a PR; secret-scan proves tracked credentials absent; branch-isolation job in place.",
+      "depends_on": ["WP-B3"]
+    },
+    {
+      "id": "WP-B5",
+      "order": 5,
+      "title": "Clean-checkout verification and evidence",
+      "objective": "Re-run every gate from a clean clone (no local caches), record build/test/dependency-resolution logs, capture git-index proof of untracked credentials, verify freeze-manifest digests remain byte-identical, and assemble the final build-system evidence pack for review.",
+      "write_path_prefixes": [
+        "benchmark/kmp-fast-vm-test/"
+      ],
+      "blockers_addressed": ["evidence requirements for clean-checkout reproducibility"],
+      "exit_gates": "Logs prove the clean checkout builds and resolves; freeze-manifest.json digest unchanged; no secrets in any artifact.",
+      "depends_on": ["WP-B4"]
+    }
+  ],
+  "work_package_disjointness": {
+    "note": "Path-prefix write sets are pairwise disjoint by construction; no two packages may write the same path prefix.",
+    "matrix": {
+      "WP-B1": ["gradle/", "gradlew", "gradlew.bat", "settings.gradle*", "build.gradle*", "gradle.properties", "build-logic/"],
+      "WP-B2": [".gitignore", "local.properties.example", "github.properties.example", "docs/"],
+      "WP-B3": ["app/"],
+      "WP-B4": [".github/", "tests.yml"],
+      "WP-B5": ["benchmark/kmp-fast-vm-test/"]
+    },
+    "overlaps": []
+  },
+  "open_questions": [
+    "Which maintained Telnyx SDK release (option A) matches the 0.3.1 API surface used by the app; required before WP-B3 can close B1.",
+    "Whether the fork is permitted to publish historical WebRTC/libyuv artifacts to its own GitHub Packages (option C) under licensing constraints - WebRTC sources are BSD-style but artifact redistribution must be checked.",
+    "Target Kotlin/Compose Multiplatform/AGP/Gradle version pins must be chosen together (D6) so the plugin matrix is actually compatible."
+  ],
+  "honesty_notes": [
+    "The WebRTC and libyuv failures are transitive consequences of the pinned legacy SDK artifact, not of the app's direct dependency list; versions.gradle declares the WebRTC coordinate but the SDK POM is what actually pulls it.",
+    "github.properties currently contains placeholders, not live values; it is listed as a blocker for its build-breaking unconditional load and its tracked-credentials pattern, not for leaked secrets.",
+    "The committed local.properties values were not reproduced, quoted, or hashed here; they are treated as exposed on the basis of their non-placeholder shape and history, which is why rotation (not just untracking) is required.",
+    "No migration code was written; every recommendation above is scoped to build system, dependencies, CI, and credential hygiene."
+  ]
+}
