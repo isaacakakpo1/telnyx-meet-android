@@ -1,0 +1,657 @@
+{
+  "schema_version": "1.0",
+  "task_id": "scout-behavior",
+  "assignment_id": "assignment-scout-behavior-5ed3c5b1",
+  "candidate_id": "candidate-scout-behavior-5ed3c5b1",
+  "generated_at": "2026-11-22",
+  "scope": "Observation only: user-visible behavior, state flow, coroutine/Flow seams, platform capabilities, parity risks, and testable work packages in the frozen Telnyx Meet Android sample. No migration code is implemented by this task.",
+  "base_commit": "7ec8f3b5785a600b1d4dffc957c0bbe58423c1a3",
+  "benchmark_ref": "benchmark/kmp-fast-vm-test/mission-brief.json",
+  "writes": ["benchmark/kmp-fast-vm-test/scouts/behavior.json"],
+  "read_set": [
+    "app/src/main/java",
+    "app/src/main/res",
+    "benchmark/kmp-fast-vm-test"
+  ],
+  "screens": [
+    {
+      "id": "splash",
+      "name": "Splash",
+      "sources": ["app/src/main/java/com/telnyx/meet/ui/SplashScreenActivity.kt"],
+      "behavior": [
+        "Launcher activity; immediately starts ManageRoomActivity and finishes (no interactive UI).",
+        "Launcher registered in app/src/main/AndroidManifest.xml."
+      ]
+    },
+    {
+      "id": "host_activity",
+      "name": "ManageRoomActivity (single-activity host)",
+      "sources": [
+        "app/src/main/java/com/telnyx/meet/ui/ManageRoomActivity.kt",
+        "app/src/main/res/layout/activity_main.xml",
+        "app/src/main/res/navigation/navigation_main.xml"
+      ],
+      "behavior": [
+        "Single FragmentContainer host; installs Hilt DefaultFragmentFactory before super.onCreate (custom constructor injection for fragments).",
+        "Starts Bugsnag unless BuildConfig.IS_APP_TESTING; Bugsnag API key hardcoded in app/src/main/AndroidManifest.xml.",
+        "Wires Navigator.navController to the nav host controller; exposes setActionBarTitle used by fragments.",
+        "Nav graph start destination is joinRoomFragment; destinations: roomListFragment, roomCreateFragment, roomFragment, roomParticipantsFragment, roomChatFragment, sharingFullScreenFragment."
+      ]
+    },
+    {
+      "id": "join_room",
+      "name": "JoinRoomFragment (start destination)",
+      "sources": [
+        "app/src/main/java/com/telnyx/meet/ui/JoinRoomFragment.kt",
+        "app/src/main/res/layout/room_join_fragment.xml",
+        "app/src/main/res/values/strings.xml"
+      ],
+      "behavior": [
+        "Room UUID field prefilled from BuildConfig.DEFAULT_ROOM (sourced from local.properties ROOM_ID in app/build.gradle buildTypes).",
+        "Participant name field defaults to R.string.dummy_android_participant_name ('Android Participant'); empty name shows R.string.provide_participant_name_error.",
+        "Camera toggle binds a CameraX front-camera preview (ProcessCameraProvider) into previewLoginView; placeholder swap on toggle.",
+        "Mic toggle only flips the icon and records micInitialState for the meeting screen (no capture on this screen).",
+        "Join button: if permissions granted navigates to roomCreateFragment with roomId+roomName; otherwise re-requests permissions via RoomsViewModel.checkPermissions.",
+        "'See available rooms' navigates to roomListFragment passing participantName; back press finishes the activity."
+      ]
+    },
+    {
+      "id": "room_list",
+      "name": "RoomListFragment (browse, create entry, delete)",
+      "sources": [
+        "app/src/main/java/com/telnyx/meet/ui/RoomListFragment.kt",
+        "app/src/main/java/com/telnyx/meet/ui/adapters/RoomAdapter.kt",
+        "app/src/main/res/layout/room_list_fragment.xml",
+        "app/src/main/res/layout/room_item.xml"
+      ],
+      "behavior": [
+        "Loads room list page 1 on view creation; request permission on view creation.",
+        "Infinite scroll appends next page when nearing list end (getMoreRooms).",
+        "Pull-to-refresh reloads page 1 and clears refreshing indicator.",
+        "Swipe-left delete with red background + UNDO snackbar ('<room> removed'); delete executes only after snackbar timeout; success shows 'Room was deleted' toast and refreshes the list.",
+        "Item click joins an existing room (routes to roomCreateFragment with roomId/roomName) when permissions are granted; otherwise re-requests permissions.",
+        "FAB opens create-room flow (routes to roomCreateFragment without roomId); empty participant name blocks navigation with field error."
+      ]
+    },
+    {
+      "id": "room_create",
+      "name": "RoomCreateFragment (create room or join by ID)",
+      "sources": [
+        "app/src/main/java/com/telnyx/meet/ui/RoomCreateFragment.kt",
+        "app/src/main/res/layout/room_create_fragment.xml"
+      ],
+      "behavior": [
+        "Dual mode: join-by-ID (roomId arg) auto-creates token on resume and hides name fields; create mode shows room-name input with CREATE button.",
+        "CREATE: empty name shows R.string.empty_or_not_unique_error field error; valid name calls createNewRoom.",
+        "Success chain rendered to user: room id/name ('...'), then room token ('...'), then connect; CREATE button re-enabled when room connection is live.",
+        "Non-unique room name: toast 'Room wasn't created: <server message>' plus inline field error; button re-enabled.",
+        "Invalid room id (token creation fails): toast 'Invalid room ID' then navigates back to joinRoomFragment (launchSingleTop, popUpToInclusive).",
+        "Room joined: navigates to roomFragment carrying roomId, roomName, refreshToken, refreshTimer (seconds at 90% of token expiry).",
+        " onStop stops the roomCreated value to prevent duplicate navigation on screen return."
+      ]
+    },
+    {
+      "id": "room",
+      "name": "RoomFragment (meeting surface)",
+      "sources": [
+        "app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt",
+        "app/src/main/res/layout/room_fragment.xml",
+        "app/src/main/res/menu/room_menu.xml",
+        "app/src/main/res/layout/participant_tile_item.xml",
+        "app/src/main/res/layout/stats_info_dialog.xml"
+      ],
+      "behavior": [
+        "Forces portrait orientation and shows room id in header; action bar title is the room name.",
+        "Participant tile grid: 2 columns, max 8 tiles, overflow counter FAB ('N more') for extra participants; tiles render WebRTC video via SurfaceViewRenderer sinks.",
+        "Options menu actions (app/src/main/res/menu/room_menu.xml): toggle camera, toggle mic, open chat, flip camera, blur background, virtual background, mic source, share/speaking view, view participants, network quality, report issue.",
+        "Camera/mic on-off publish or update the stream (PublishConfigHelper; video 256x256@30fps, audio enabled); icons reflect state; 'self' stream key plus track keys '000' (video) / '001' (audio).",
+        "Blur and virtual background are TelnyxVideoProcessing filters on the published camera stream; virtual background uses bundled app/src/main/assets/clouds.jpeg.",
+        "Mic source dialog selects audio output between Phone earpiece, Bluetooth, Loud speaker (SDK AudioDevice).",
+        "Main-view button cycles FULL_PARTICIPANTS -> MAIN_SHARE_VIEW_AND_PARTICIPANTS -> MAIN_SHARE_VIEW_ONLY (navigates to full-screen share).",
+        "Full-screen button toggles between main share view and full-screen share fragment.",
+        "Tap a tile (or the presentation surface) to open a live WebRTC stats bottom sheet refreshed every 2 seconds; audio/video toggle switches stats source; dismissing the sheet cancels polling.",
+        "Presentation stream: when any participant publishes a 'presentation' stream, it is subscribed (video only) and rendered in the main surface; view switches to share layout.",
+        "State machine: DISCONNECTING shows progress bar; DISCONNECTED hides it and navigates to joinRoomFragment; back press runs disconnect sequence (stop captures, disconnect, reset media states, cancel token-refresh job).",
+        "Kick: if the leaving participant is self with KICKED reason, shows 'You were kicked!' toast and runs disconnect sequence without calling disconnect twice.",
+        "Join/leave notices: 'X has joined' / 'X has left' admin messages are appended to the shared chat history when the participant can receive messages.",
+        "Token refresh: one-shot coroutine delays for refreshTimer seconds, refreshes token, recomputes timer (90% of new expiry) and restarts.",
+        "On stop/resume: current camera/mic states are stored and capture restarts after resume (SHOULD_RESTART_CAPTURE saved via onSaveInstanceState)."
+      ]
+    },
+    {
+      "id": "full_screen_share",
+      "name": "SharingFullScreenFragment (immersive presentation view)",
+      "sources": [
+        "app/src/main/java/com/telnyx/meet/ui/SharingFullScreenFragment.kt",
+        "app/src/main/res/layout/sharing_full_screen.xml"
+      ],
+      "behavior": [
+        "Forces landscape orientation and repeatedly re-enables immersive system bars every 4 seconds.",
+        "Renders the sharer's 'presentation' video track full-screen; re-binds surface on each participants emission while sharing.",
+        "Auto-exits (navigateBack) when the sharer leaves or presentation video is disabled; back press also removes surface, restores system UI, and pops.",
+        "Releases the renderer surface on destroy."
+      ]
+    },
+    {
+      "id": "chat",
+      "name": "RoomChatFragment (text chat)",
+      "sources": [
+        "app/src/main/java/com/telnyx/meet/ui/RoomChatFragment.kt",
+        "app/src/main/res/layout/chat_dialog_layout.xml",
+        "app/src/main/res/layout/self_message_item.xml",
+        "app/src/main/res/layout/remote_message_item.xml",
+        "app/src/main/res/layout/admin_message_item.xml",
+        "app/src/main/java/com/telnyx/meet/ui/adapters/MessageListAdapter.kt"
+      ],
+      "behavior": [
+        "Lists chat history from the shared viewmodel; new messages auto-scroll to bottom.",
+        "Recipient selection: multi-choice dialog over message-capable participants with OK/Clear buttons; message is sent only to selected participant ids.",
+        "Send button sends a TEXT message, clears input, hides keyboard (app/src/main/java/com/telnyx/meet/ui/utilities/KeyboardExtensions.kt).",
+        "Delivery success appends the message labeled 'SELF'; delivery failure is only logged; received messages are appended labeled by sender participant id with current HH:mm timestamp.",
+        "Joined/left participants add to the chat roster and produce admin messages '<name> has joined/left'.",
+        "History is saved back to the viewmodel on destroy and cleared when returning to the join screen."
+      ]
+    },
+    {
+      "id": "participants",
+      "name": "ParticipantsFragment (roster)",
+      "sources": [
+        "app/src/main/java/com/telnyx/meet/ui/ParticipantsFragment.kt",
+        "app/src/main/java/com/telnyx/meet/ui/adapters/ParticipantsAdapter.kt",
+        "app/src/main/res/layout/participants_fragment.xml",
+        "app/src/main/res/layout/participant_item.xml"
+      ],
+      "behavior": [
+        "Shows live participant roster; updates on join, leave, speaking, and stream-changed events.",
+        "Re-registers observers on every resume (observer set is rebuilt in onResume)."
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "id": "launch_to_join",
+      "steps": [
+        "SplashScreenActivity forwards to ManageRoomActivity (app/src/main/java/com/telnyx/meet/ui/SplashScreenActivity.kt).",
+        "Nav graph start destination joinRoomFragment (app/src/main/res/navigation/navigation_main.xml)."
+      ]
+    },
+    {
+      "id": "join_by_id",
+      "steps": [
+        "JoinRoomFragment submit -> roomCreateFragment(roomId, roomName=roomId).",
+        "RoomCreateFragment resume -> createTokenForRoom (app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt) -> tokenCreated -> connectToRoom -> joinedRoom -> roomFragment(roomId, roomName, refreshToken, refreshTimer).",
+        "Token failure -> 'Invalid room ID' toast -> back to joinRoomFragment."
+      ]
+    },
+    {
+      "id": "create_room",
+      "steps": [
+        "RoomListFragment FAB or JoinRoomFragment -> roomCreateFragment(participantName).",
+        "CREATE -> createNewRoom -> roomCreated -> createTokenForRoom -> tokenCreated -> connect -> roomFragment.",
+        "Duplicate name -> error event -> toast + field error."
+      ]
+    },
+    {
+      "id": "browse_and_delete",
+      "steps": [
+        "JoinRoomFragment 'see available rooms' -> roomListFragment(participantName).",
+        "Pagination via scroll; swipe-to-refresh resets page 1.",
+        "Swipe-left delete -> UNDO snackbar -> on timeout DELETE rooms/{id} via app/src/main/java/com/telnyx/meet/data/RoomService.kt -> toast + list refresh; UNDO restores the row without deleting."
+      ]
+    },
+    {
+      "id": "in_meeting_controls",
+      "steps": [
+        "RoomFragment menu toggles camera/mic (publish vs update), flip camera, blur / virtual background, audio output dialog, chat, participants, network quality, report issue (Bugsnag with SDK state file, room id/name, participant id, user description)."
+      ]
+    },
+    {
+      "id": "presentation_share",
+      "steps": [
+        "Participants emission with a 'presentation' stream -> subscribe video-only -> main surface render -> view switches to MAIN_SHARE_VIEW_AND_PARTICIPANTS.",
+        "Full-screen action -> sharingFullScreenFragment (landscape immersive).",
+        "Teardown when presentation disabled or sharer leaves: unsubscribe, restore full participant grid; full-screen fragment pops itself."
+      ]
+    },
+    {
+      "id": "stats_viewing",
+      "steps": [
+        "Tile click or presentation-surface click -> stats polling coroutine (2s loop) -> BottomSheetDialog with per-source fields (remote/local video/audio).",
+        "Toggle button in the sheet switches audio<->video source; dismiss cancels the job."
+      ]
+    },
+    {
+      "id": "chat_flow",
+      "steps": [
+        "RoomFragment menu -> roomChatFragment.",
+        "Participants observer builds recipient roster; multi-select dialog filters recipients; send -> delivery events append messages; leave/join produce admin messages."
+      ]
+    },
+    {
+      "id": "leave_and_kick",
+      "steps": [
+        "Back on RoomFragment -> disconnectSequence -> DISCONNECTING progress -> DISCONNECTED -> navigate to joinRoomFragment.",
+        "Self kicked (KICKED reason) -> disconnectSequence(wasKicked=true) skips disconnect() and cancels refresh job -> 'You were kicked!' toast."
+      ]
+    },
+    {
+      "id": "permission_flow",
+      "steps": [
+        "JoinRoomFragment and RoomListFragment request runtime permissions on view creation via RoomsViewModel.checkPermissions (Dexter).",
+        "All granted -> permissionRequest=true gates join/browse navigation.",
+        "Any permission permanently denied -> toast 'Camera and Audio permissions are required to continue', permissionRequest=false.",
+        "Denied-but-not-permanent -> no event is emitted, so gating silently blocks navigation (observed gap; preserve or change deliberately with tests)."
+      ]
+    },
+    {
+      "id": "token_refresh_loop",
+      "steps": [
+        "RoomFragment delay(refreshTimer) -> refreshTokenForRoom -> tokenRefreshed event -> recompute refreshTimer = 90% of token_expires_at -> restart counter (app/src/main/java/com/telnyx/meet/ui/utilities/Utils.kt calculateTokenExpireTime)."
+      ]
+    }
+  ],
+  "seams": [
+    {
+      "id": "S1",
+      "name": "Retrofit Call + enqueue callbacks",
+      "current": [
+        "app/src/main/java/com/telnyx/meet/data/RoomService.kt",
+        "app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt"
+      ],
+      "current_mechanism": "RoomService returns retrofit2.Call<T>; RoomsViewModel.enqueue callbacks postValue to LiveData (createTokenForRoom, refreshTokenForRoom, createNewRoom, getRoomList, deleteRoom).",
+      "target_seam": "suspend repository functions returning parsed models or a sealed Result; errors (non-unique room name, invalid room id) become explicit UI states instead of ad-hoc errorBody Gson parsing; loading LiveData<Boolean> becomes StateFlow-backed UI state."
+    },
+    {
+      "id": "S2",
+      "name": "One-off events via LiveData<Event<T>>",
+      "current": [
+        "app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt",
+        "app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt",
+        "app/src/main/java/com/telnyx/meet/ui/RoomCreateFragment.kt"
+      ],
+      "current_mechanism": "SDK Event wrapper (com.telnyx.video.sdk.Event) with getContentIfNotHandled consumed by 6 fragments: tokenCreated, tokenRefreshed, roomError, deleted, joined/leaving participant, message delivery success/failed, message received.",
+      "target_seam": "SharedFlow (replay 0, extraBufferCapacity >= 1) or Channel for one-off effects with explicit lifecycle-cancellation semantics; durable equivalents as StateFlow. Delivery-once guarantees must be testable."
+    },
+    {
+      "id": "S3",
+      "name": "SDK Room LiveData observables",
+      "current": ["app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt"],
+      "current_mechanism": "RoomsViewModel forwards ~13 LiveData getters from the SDK Room object (connection status, participants, state changes, joined/leaving participant, speaking participant, stream changed, text-room events, joined room).",
+      "target_seam": "Platform adapter layer converts SDK callbacks/LiveData into a shared meeting contract: StateFlow<MeetingState> for durable state (connection, participants, streams, chat, stats availability) and SharedFlow<MeetingEffect> for one-off events; SDK LiveData never crosses shared code."
+    },
+    {
+      "id": "S4",
+      "name": "Unmanaged CoroutineScope in UI",
+      "current": [
+        "app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt",
+        "app/src/main/java/com/telnyx/meet/ui/SharingFullScreenFragment.kt",
+        "app/src/main/java/com/telnyx/meet/ui/adapters/ParticipantTileAdapter.kt"
+      ],
+      "current_mechanism": "CoroutineScope(Dispatchers.Main).launch refresh-token counter (RoomFragment.startCounter), media-restore delays (300ms, onResume + checkInitialMediaStatus), stats polling (Dispatchers.Default, 2s loop), full-screen enforcer (4s loop), adapter notifyDataSetChanged debounce (1s).",
+      "target_seam": "viewModelScope / lifecycleScope or Flow builders (ticker/polling flow with distinctUntilChanged and debounce) tied to lifecycle; cancellation on disconnect and screen exit preserved."
+    },
+    {
+      "id": "S5",
+      "name": "WebRTC stats callback",
+      "current": ["app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt"],
+      "current_mechanism": "getWebRTCStatsForStream(participantId, streamKey, RTCStatsCollectorCallback) bridges SDK to fragment; fragment parses RTCStatsReport via string contains + Gson.",
+      "target_seam": "suspend fun or Flow<StatsSnapshot> from the shared contract; kotlinx.serialization replaces Gson + string matching; polling loop owns cancellation."
+    },
+    {
+      "id": "S6",
+      "name": "Permission request (Dexter listener)",
+      "current": ["app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt"],
+      "current_mechanism": "checkPermissions uses Dexter MultiplePermissionsListener and publishes permissionRequest MutableLiveData<Boolean>; toast on permanent denial only.",
+      "target_seam": "Suspend/Flow permission API behind a capability interface; permission state as StateFlow<PermissionState>; permanent-denial and soft-denial outcomes explicit."
+    },
+    {
+      "id": "S7",
+      "name": "CameraX ListenableFuture preview",
+      "current": ["app/src/main/java/com/telnyx/meet/ui/JoinRoomFragment.kt"],
+      "current_mechanism": "ProcessCameraProvider.getInstance + addListener to bind front-camera Preview to viewLifecycleOwner; unbindAll on stop.",
+      "target_seam": "Suspend await bridge for provider acquisition in the Android adapter; shared UI expresses only 'local preview on/off' intent; iOS uses its own capture adapter."
+    },
+    {
+      "id": "S8",
+      "name": "Adapter callback interfaces",
+      "current": [
+        "app/src/main/java/com/telnyx/meet/ui/adapters/ParticipantTileAdapter.kt",
+        "app/src/main/java/com/telnyx/meet/ui/adapters/RoomAdapter.kt"
+      ],
+      "current_mechanism": "ParticipantTileListener and ClickListener/BindableAdapter interfaces wired from fragments; notifyDataSetChanged-driven updates (with 1s delayed batch for tiles).",
+      "target_seam": "Shared UI intents as sealed event types consumed by screen state holders; list rendering replaced by shared Compose lists with the same visible outcomes (tile surface binding, overflow counter, UNDO snackbar, auto-scroll)."
+    }
+  ],
+  "shared_state_contracts": [
+    {
+      "id": "C1",
+      "name": "Token & room lifecycle",
+      "owner": "app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt",
+      "details": "createTokenForRoom -> room instance creation (Room(context, roomId, roomToken, externalData, enableMessages)) -> connect -> joinedRoom; refresh token cycle with token_expires_at at 90% (app/src/main/java/com/telnyx/meet/ui/utilities/Utils.kt). Endpoints in app/src/main/java/com/telnyx/meet/data/RoomService.kt."
+    },
+    {
+      "id": "C2",
+      "name": "Media initial/current state",
+      "owner": "app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt",
+      "details": "MediaOnStart enum (ENABLED/DISABLED) for micInitialState/cameraInitialState (set by join-screen toggles, consumed once) and current camera/mic state (survives stop/resume; saved to instance state via RoomFragment SHOULD_RESTART_CAPTURE)."
+    },
+    {
+      "id": "C3",
+      "name": "Connection & SDK state machine",
+      "owner": "app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt",
+      "details": "State{status, action}: Status DISCONNECTING/DISCONNECTED drives progress + navigation; StateAction.NETWORK_METRICS_REPORT triggers adapter refresh. Queue-based state consumption in fragments."
+    },
+    {
+      "id": "C4",
+      "name": "Participants & streams",
+      "owner": "app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt",
+      "details": "Participant{participantId, id, externalUsername, canReceiveMessages, streams[{streamKey, videoEnabled, videoTrack}]}; stream keys 'self'/'000'/'001'/'presentation'; StreamConfig(audioEnabled, videoEnabled); leaving events carry (id, reason) with KICKED; speaking emits (Participant, ?)."
+    },
+    {
+      "id": "C5",
+      "name": "Chat",
+      "owner": "app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt",
+      "details": "Message{content(type, payload), recipients[]}; MessageUI{sender, fullMessage, date} (app/src/main/java/com/telnyx/meet/ui/models/MessageUI.kt); delivery success/failed events; admin message factory; history stored in viewmodel field (mutable, shared, cleared on join screen)."
+    },
+    {
+      "id": "C6",
+      "name": "Stats",
+      "owner": "app/src/main/java/com/telnyx/meet/ui/models/StatsParticipant.kt",
+      "details": "StatsSource {LOCAL,REMOTE}x{AUDIO,VIDEO}; StreamStats subclasses rendered in RoomFragment.updateDialogInfo define the exact field set both platforms must reproduce (frameWidth/frameHeight/bytesReceived/packetsReceived/packetsLost/framesPerSecond/totalInterFrameDelay; jitter/audioLevel/totalAudioEnergy/totalSamplesDuration; packetsSent/bytesSent/headerBytesSent/nackCount; retransmittedPacketsSent/retransmittedBytesSent)."
+    },
+    {
+      "id": "C7",
+      "name": "Audio output routing",
+      "owner": "app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt",
+      "details": "AudioDevice {PHONE_EARPIECE, BLUETOOTH, LOUDSPEAKER} selection dialog with phone as default."
+    },
+    {
+      "id": "C8",
+      "name": "Room browsing & pagination",
+      "owner": "app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt",
+      "details": "page/total_pages from RoomsListResponse.meta; append-vs-replace semantics keyed on mLastRetrievedPage > 1; room deletion by id."
+    }
+  ],
+  "platform_capabilities": {
+    "android": [
+      {
+        "capability": "Runtime permissions (camera, mic, media/storage by API level)",
+        "status": "supported",
+        "evidence": [
+          "app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt checkPermissions",
+          "app/src/main/AndroidManifest.xml",
+          "app/build.gradle (minSdk 23, targetSdk 34)"
+        ]
+      },
+      {
+        "capability": "Local camera preview (CameraX front camera)",
+        "status": "supported",
+        "evidence": ["app/src/main/java/com/telnyx/meet/ui/JoinRoomFragment.kt startCamera"]
+      },
+      {
+        "capability": "WebRTC video render surfaces (SurfaceViewRenderer sinks)",
+        "status": "supported",
+        "evidence": [
+          "app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt",
+          "app/src/main/java/com/telnyx/meet/ui/adapters/ParticipantTileAdapter.kt"
+        ]
+      },
+      {
+        "capability": "Publish/update/subscribe audio+video streams with constraints and camera flip",
+        "status": "supported",
+        "evidence": [
+          "app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt startCameraCapture",
+          "app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt publish/subscribe/unsubscribe"
+        ]
+      },
+      {
+        "capability": "Audio output routing (earpiece, bluetooth, loudspeaker)",
+        "status": "supported",
+        "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt createAudioOutputSelectionDialog"]
+      },
+      {
+        "capability": "Background blur and virtual background on published video",
+        "status": "supported",
+        "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt applyBlurFilter", "app/src/main/assets/clouds.jpeg"]
+      },
+      {
+        "capability": "Live WebRTC stats (RTCStatsReport) for local/remote audio/video",
+        "status": "supported",
+        "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt startStatsJob", "app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt getWebRTCStatsForStream"]
+      },
+      {
+        "capability": "Network quality metrics reporting toggle",
+        "status": "supported",
+        "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt enableNetworkMetricsReport"]
+      },
+      {
+        "capability": "REST room/token management (Retrofit + OkHttp + Gson)",
+        "status": "supported",
+        "evidence": ["app/src/main/java/com/telnyx/meet/data/RoomService.kt", "app/src/main/java/com/telnyx/meet/di/NetworkModule.kt"]
+      },
+      {
+        "capability": "Crash reporting and issue reporting (Bugsnag)",
+        "status": "supported",
+        "evidence": ["app/src/main/java/com/telnyx/meet/ui/ManageRoomActivity.kt", "app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt showIssueDialog"]
+      },
+      {
+        "capability": "Foreground service",
+        "status": "declared_but_unused_in_app",
+        "evidence": ["app/src/main/AndroidManifest.xml (FOREGROUND_SERVICE permission; no service implementation under app/src/main/java)"]
+      }
+    ],
+    "ios": {
+      "status": "not_established_in_repository",
+      "reason": "No iOS source set, no iosMain/iosApp, no Podfile or Info.plist exists; the only video SDK dependency is the Android AAR com.github.team-telnyx:telnyx-meet-android-sdk:0.3.1 via JitPack (app/build.gradle).",
+      "unknown_capabilities": [
+        "iOS Telnyx video SDK availability and API surface",
+        "Background blur / virtual background on iOS",
+        "WebRTC stats API and stat field parity",
+        "Audio output routing options on iOS",
+        "Screen-share/presentation publishing on iOS",
+        "iOS permission model (Info.plist purpose strings) and lifecycle mapping",
+        "Local preview renderer (UIKit interop)"
+      ],
+      "policy": "Report unknowns honestly; per benchmark/kmp-fast-vm-test/mission-brief.json excluded_scope, inventing unsupported iOS SDK capabilities is prohibited. Each unknown must be resolved by evidence (SDK docs, spike, or explicit capability gate) before shared UI assumes support; disabled-with-honest-UI is the default."
+    }
+  },
+  "parity_risks": [
+    {
+      "id": "R1",
+      "risk": "org.webrtc.SurfaceViewRenderer is Android-only; shared Compose UI needs platform video renderers while preserving sink lifecycle (attach on presentation start, release on leave/destroy).",
+      "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt", "app/src/main/java/com/telnyx/meet/ui/SharingFullScreenFragment.kt"]
+    },
+    {
+      "id": "R2",
+      "risk": "Media restore across config changes relies on onSaveInstanceState + ad-hoc 300ms delays; shared UI must reproduce restore semantics without Android instance state.",
+      "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt"]
+    },
+    {
+      "id": "R3",
+      "risk": "Orientation and immersive enforcement (portrait meeting, landscape share, 4s system-UI re-enforce loop) use Android activity APIs that have no shared equivalent.",
+      "evidence": ["app/src/main/java/com/telnyx/meet/ui/SharingFullScreenFragment.kt"]
+    },
+    {
+      "id": "R4",
+      "risk": "SDK Room is constructed with an Android Context inside the viewmodel; shared contracts must own a platform-free meeting engine while adapters hold the context.",
+      "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt createTokenForRoom"]
+    },
+    {
+      "id": "R5",
+      "risk": "Non-unique room-name errors are parsed from errorBody string with Gson and read nameNotUnique[0] (null-unsafe); a typed error contract is needed to keep the toast/field-error behavior testable.",
+      "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt createNewRoom", "app/src/main/java/com/telnyx/meet/ui/RoomCreateFragment.kt"]
+    },
+    {
+      "id": "R6",
+      "risk": "Stats parsing depends on RTCStatsReport.toString() containing 'mediaType: \"video\"' fragments; field extraction differs by platform and must be locked by contract tests.",
+      "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt parseRemoteVideoStats"]
+    },
+    {
+      "id": "R7",
+      "risk": "handleStateChange duplicates the DISCONNECTED branch (two when-blocks, second wrapped in try/catch with a currentDestination guard); navigation duplication must be deduplicated intentionally.",
+      "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt handleStateChange"]
+    },
+    {
+      "id": "R8",
+      "risk": "Kick path cancels jobs but does not call disconnect(); ordering with the SDK's own DISCONNECTED navigation must be preserved to avoid double navigation or leaked captures.",
+      "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt disconnectSequence"]
+    },
+    {
+      "id": "R9",
+      "risk": "Global loading flag races across concurrent calls (last postValue wins) and is toggled by every request; per-call state or a request counter is needed.",
+      "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt"]
+    },
+    {
+      "id": "R10",
+      "risk": "Chat roster and message history live in one mutable list shared by all fragments; re-observing on resume can duplicate recipient entries and history ownership is implicit.",
+      "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomChatFragment.kt", "app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt saveChatHistory"]
+    },
+    {
+      "id": "R11",
+      "risk": "Soft-denied permissions emit no result, silently blocking navigation; intentional-decision needed (keep or make explicit) with matching tests on both platforms.",
+      "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt checkPermissions"]
+    },
+    {
+      "id": "R12",
+      "risk": "Full-screen toggle discards its ViewMode expressions (currentViewMode is not updated), so returning from full-screen retains the previous layout mode; preserve or fix deliberately with tests.",
+      "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt fullScreenButton listener"]
+    },
+    {
+      "id": "R13",
+      "risk": "Remote audio stats request uses the 'self' stream key for non-self participants; stats routing relies on SDK behavior that may not exist identically on iOS.",
+      "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt onItemClicked"]
+    },
+    {
+      "id": "R14",
+      "risk": "Credential hygiene: local.properties (API_KEY/ROOM_ID placeholders) is tracked in git and Bugsnag API key is committed in the manifest; migration must move these to untracked configuration per the mission gates.",
+      "evidence": ["local.properties", "app/build.gradle", "app/src/main/AndroidManifest.xml"]
+    },
+    {
+      "id": "R15",
+      "risk": "Baseline Gradle build cannot resolve legacy WebRTC/libyuv artifacts (benchmark README); behavior parity tests must not depend on the broken legacy build path.",
+      "evidence": ["benchmark/kmp-fast-vm-test/README.md", "versions.gradle (deps.webrtc)", "app/build.gradle"]
+    }
+  ],
+  "work_packages": [
+    {
+      "id": "WP-1",
+      "title": "Room list, pagination, and swipe-delete behavior",
+      "behavior": "List replaces on page 1 and appends on later pages; pull-to-refresh resets to page 1; swipe-left delete fires DELETE only after UNDO snackbar dismissal; success toast and refresh.",
+      "evidence": [
+        "app/src/main/java/com/telnyx/meet/ui/RoomListFragment.kt",
+        "app/src/main/java/com/telnyx/meet/ui/adapters/RoomAdapter.kt",
+        "app/src/main/java/com/telnyx/meet/data/RoomService.kt"
+      ],
+      "acceptance_test": "Repository/state-level tests with a fake paging API assert replace vs append per page, delete-after-timeout semantics, and UNDO rollback; no network required."
+    },
+    {
+      "id": "WP-2",
+      "title": "Create-room success and duplicate-name error paths",
+      "behavior": "Valid name -> room created -> token requested -> connect -> navigate to meeting; duplicate name -> toast with server message + inline field error + re-enabled button.",
+      "evidence": [
+        "app/src/main/java/com/telnyx/meet/ui/RoomCreateFragment.kt",
+        "app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt createNewRoom"
+      ],
+      "acceptance_test": "Reducer/state-machine unit tests over success and typed failure responses verify the exact emitted states/effects and field errors."
+    },
+    {
+      "id": "WP-3",
+      "title": "Join-by-ID and invalid-room fallback",
+      "behavior": "Token creation for a bad room id emits tokenCreationError -> 'Invalid room ID' toast and pops back to join; valid id auto-connects on resume.",
+      "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomCreateFragment.kt"],
+      "acceptance_test": "State transitions from token failure to navigation are covered without Android UI (pure event streams)."
+    },
+    {
+      "id": "WP-4",
+      "title": "Permission gating matrix",
+      "behavior": "All granted gates navigation; permanently denied shows the required-continue toast; soft denial emits nothing today (decision documented).",
+      "evidence": [
+        "app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt checkPermissions",
+        "app/src/main/java/com/telnyx/meet/ui/JoinRoomFragment.kt",
+        "app/src/main/java/com/telnyx/meet/ui/RoomListFragment.kt"
+      ],
+      "acceptance_test": "Capability-interface tests simulate granted/soft-denied/permanent-denied and assert navigation gating and toasts; Android/iOS adapters tested separately."
+    },
+    {
+      "id": "WP-5",
+      "title": "Camera/mic toggles and media-state restore",
+      "behavior": "Toggles publish or update streams; icons reflect state; join-screen initial media flags consumed once; restore after stop/resume uses saved camera state.",
+      "evidence": [
+        "app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt startCameraCapture",
+        "app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt setCameraState"
+      ],
+      "acceptance_test": "State-machine tests: publish-on-first-toggle vs update-on-subsequent, one-shot initial flags, restore path after backgrounding."
+    },
+    {
+      "id": "WP-6",
+      "title": "Presentation share view transitions",
+      "behavior": "Presentation stream presence switches layouts and binds the main surface; stream end or sharer departure restores the grid; full-screen fragment opens/exits as specified.",
+      "evidence": [
+        "app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt processParticipantSharing",
+        "app/src/main/java/com/telnyx/meet/ui/SharingFullScreenFragment.kt"
+      ],
+      "acceptance_test": "Event-reduction tests over participants/stream-changed/leaving emissions assert every view-mode transition and unsubscribe call."
+    },
+    {
+      "id": "WP-7",
+      "title": "Chat send, receive, delivery, and history",
+      "behavior": "Send only to selected recipients; delivery success appends SELF message; failure logged; received messages labeled by sender id; join/leave admin notices; history persists to viewmodel and clears on join screen.",
+      "evidence": [
+        "app/src/main/java/com/telnyx/meet/ui/RoomChatFragment.kt",
+        "app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt sendTextRoomMessage"
+      ],
+      "acceptance_test": "Pure reducer tests for message bookkeeping plus recipient-selection logic; shared chat contract shared across platforms."
+    },
+    {
+      "id": "WP-8",
+      "title": "WebRTC stats surfaces",
+      "behavior": "Tile/presentation clicks start 2-second polling for the correct source; bottom sheet renders the exact field set; sheet dismissal cancels polling; toggle switches audio/video.",
+      "evidence": [
+        "app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt startStatsJob",
+        "app/src/main/java/com/telnyx/meet/ui/models/StatsParticipant.kt"
+      ],
+      "acceptance_test": "Flow tests over synthetic stats snapshots assert source selection, polling cadence, and cancellation; rendering contract fixed by C6 field list."
+    },
+    {
+      "id": "WP-9",
+      "title": "Token refresh timer semantics",
+      "behavior": "Refresh fires after refreshTimer seconds; new expiry recomputes timer at 90%; cycle restarts; disconnect cancels the job.",
+      "evidence": [
+        "app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt startCounter",
+        "app/src/main/java/com/telnyx/meet/ui/utilities/Utils.kt"
+      ],
+      "acceptance_test": "Virtual-time coroutine tests over the refresh cycle and cancellation."
+    },
+    {
+      "id": "WP-10",
+      "title": "Disconnect and kick sequences",
+      "behavior": "Back press stops captures, disconnects, resets media states, cancels refresh; DISCONNECTING shows progress, DISCONNECTED navigates to join exactly once; kicked self shows toast and skips duplicate disconnect.",
+      "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt disconnectSequence"],
+      "acceptance_test": "Ordered-event tests over state queue assert single navigation and capture teardown for both exit paths."
+    },
+    {
+      "id": "WP-11",
+      "title": "Shared meeting contract surface (pre-migration definition)",
+      "behavior": "Define MeetingState/MeetingEffect equivalents for every observable currently exposed by RoomsViewModel and consumed by fragments (C1-C8), with buffered one-off delivery and lifecycle cancellation.",
+      "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt"],
+      "acceptance_test": "Contract test suite enumerates the observable set; shared tests must pass before any UI migration; architecture gate forbids LiveData/retrofit-callback/GlobalScope in common production code (benchmark/kmp-fast-vm-test/acceptance-gates.json)."
+    },
+    {
+      "id": "WP-12",
+      "title": "Capability matrix with honest iOS unknowns",
+      "behavior": "Publish capability table (android list above; iOS unknown entries pending evidence) linked to adapter tests; disabled capabilities shown honestly in UI.",
+      "evidence": [
+        "app/src/main/AndroidManifest.xml",
+        "app/build.gradle",
+        "benchmark/kmp-fast-vm-test/mission-brief.json"
+      ],
+      "acceptance_test": "Capability gate asserts every declared capability has adapter evidence or is explicitly listed as unavailable; no invented iOS behavior (mission-brief excluded_scope)."
+    }
+  ],
+  "notes": {
+    "only_expected_change": "This file (benchmark/kmp-fast-vm-test/scouts/behavior.json). No app or benchmark input files are modified.",
+    "sdk_boundary": "com.telnyx.video.sdk.* types (Room, Event, Participant, Message, PublishConfigHelper, TelnyxVideoProcessing, State/Status, AudioDevice) originate from the JitPack AAR declared in app/build.gradle; their behavior is recorded as observed at the app-side call sites.",
+    "event_wrapper": "Event<T> is the SDK's one-off event wrapper consumed via getContentIfNotHandled across app/src/main/java/com/telnyx/meet/ui/.",
+    "baseline_build": "Legacy build resolution failure (WebRTC/libyuv) is pre-existing baseline evidence documented in benchmark/kmp-fast-vm-test/README.md and not caused by this task."
+  }
+}

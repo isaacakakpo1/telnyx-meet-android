@@ -1,0 +1,387 @@
+{
+  "schema_version": "1.0",
+  "task_id": "scout-verification",
+  "assignment_id": "assignment-scout-verification-1606231f",
+  "candidate_id": "candidate-scout-verification-1606231f",
+  "run_id": "scout-verification-1606231f",
+  "base_commit": "7ec8f3b5785a600b1d4dffc957c0bbe58423c1a3",
+  "benchmark": {
+    "benchmark_id": "telnyx-meet-kmp-fastvm-v1",
+    "suite_id": "telnyx-meet-kmp-acceptance-v1",
+    "benchmark_base_commit": "3276e2887c7eced7a4dcbec7f726d7eb0f3d2574",
+    "target_branch": "kmp-fast-vm-test",
+    "gates_digest_sha256": "1f5d6fbdd844827cd4b01a1d937d28eea63cbc6fb8de51b4ebd8b7730bc5e9e2",
+    "hidden_suite": "sealed outside the candidate repository; digest_status=pending-baseline-freeze"
+  },
+  "inspection_mode": "static read-only inspection; ci_minutes budget is 0, so no Gradle, emulator, or CI execution was performed — execution evidence is deferred to the verification DAG owners",
+  "summary": "All 11 frozen acceptance gates are mapped to evidence. At the base commit no gate is fully green: the Android test gate is blocked by an environmental dependency-resolution failure (unavailable legacy org.webrtc:google-webrtc:1.0.32006 and com.github.team-telnyx:telnyx-meet-android-sdk:0.3.1 jitpack artifact, which fails before any test executes); the iOS gate is blocked by the absent KMP/iOS source sets and by the Linux sandbox lacking a macOS/Xcode toolchain; the credential-hygiene, project-structure, coroutine-boundary, meeting-contract, and documentation gates are failing code/repo states that the migration must repair. Existing coverage is one trivial unit test and one 8-test Espresso instrumentation suite that can only run on the Firebase Test Lab Pixel2(API 29) spec with CI secrets.",
+  "counts": { "gates_total": 11, "pass": 0, "fail_code": 5, "blocked_environmental": 4, "blocked_mixed": 2 },
+  "sources_read": [
+    "benchmark/kmp-fast-vm-test/acceptance-gates.json",
+    "benchmark/kmp-fast-vm-test/mission-brief.json",
+    "benchmark/kmp-fast-vm-test/freeze-manifest.json",
+    "benchmark/kmp-fast-vm-test/README.md",
+    "app/build.gradle",
+    "versions.gradle",
+    "build.gradle",
+    "tests.yml",
+    "README.md",
+    ".github/workflows/code_quality.yml",
+    ".github/workflows/firebase.yml",
+    ".github/dependabot.yml",
+    ".github/pull_request_template.md",
+    "app/src/test/**",
+    "app/src/androidTest/**",
+    "app/src/main/java/com/telnyx/**"
+  ],
+  "write_set": ["benchmark/kmp-fast-vm-test/scouts/verification.json"],
+  "hidden_test_candidates": [
+    {
+      "path_prefix": "app/src/test/com/telnyx/meet/**",
+      "kind": "existing_jvm_unit_test_root",
+      "basis": "ExampleUnitTest.kt is the only host-side test; the sealed suite can extend this root without build changes",
+      "note": "single example test exists; logic coverage is effectively zero"
+    },
+    {
+      "path_prefix": "app/src/androidTest/com/telnyx/meet/**",
+      "kind": "existing_instrumentation_test_root",
+      "basis": "ManageRoomDetailsActivityTest (8 @Test methods) plus 6 helper classes under testhelpers/; runnable via tests.yml Pixel2 API 29 spec",
+      "note": "requires device farm and SERVICE_ACCOUNT secret; blocked in sandbox"
+    },
+    {
+      "path_prefix": "shared/src/commonTest/**",
+      "kind": "proposed_kmp_source_set",
+      "basis": "mission-brief.json acceptance criterion names commonTest; directory does not exist at base commit",
+      "note": "hidden shared-domain tests would attach here after migration creates the source set; absence at base is a code gap, not an environmental block"
+    },
+    {
+      "path_prefix": "shared/src/androidUnitTest/**",
+      "kind": "proposed_kmp_source_set",
+      "basis": "mission-brief.json names androidUnitTest; absent at base",
+      "note": "JVM-side Android unit tests for the migrated module"
+    },
+    {
+      "path_prefix": "shared/src/iosTest/**",
+      "kind": "proposed_kmp_source_set",
+      "basis": "mission-brief.json names iosTest; absent at base and requires simulator toolchain to execute",
+      "note": "execution blocked on macOS runners only"
+    },
+    {
+      "path_prefix": "tests.yml",
+      "kind": "device_farm_spec",
+      "basis": "Firebase Test Lab arg-spec referenced by .github/workflows/firebase.yml; hidden UI suites are selected through this file",
+      "note": "spec is valid but its secrets are unavailable outside CI"
+    }
+  ],
+  "gates": [
+    {
+      "id": "project-structure",
+      "kind": "architecture",
+      "status": "fail_code",
+      "owner": "review",
+      "evidence": [
+        "app/ is the only Gradle module; settings.gradle contains no shared/KMP module",
+        "no commonMain, commonTest, androidMain, androidUnitTest, iosMain, or iosTest source sets exist (mission acceptance criterion 1 unmet at base)"
+      ]
+    },
+    {
+      "id": "common-boundary",
+      "kind": "architecture",
+      "status": "blocked_mixed",
+      "owner": "test",
+      "evidence": [
+        "commonMain does not exist, so the import scan has no target until the migration lands",
+        "scan spec: forbid android.* and androidx.* and platform.UIKit imports plus GlobalScope/ LiveData / Retrofit-callback constructs in shared production code (mission evidence requirement 3)"
+      ]
+    },
+    {
+      "id": "coroutine-boundary",
+      "kind": "static-and-unit",
+      "status": "fail_code",
+      "owner": "test",
+      "evidence": [
+        "BaseViewModel.kt and app data layer hold coroutine code but no StateFlow/SharedFlow presentation contract exists",
+        "coroutines-test 1.5.0 and kotlinx-coroutines deps are declared in versions.gradle yet no Flow-based state/effect test exists",
+        "static scan must also prove no unmanaged CoroutineScope creation"
+      ]
+    },
+    {
+      "id": "android-build-and-tests",
+      "kind": "platform",
+      "status": "blocked_environmental",
+      "owner": "test",
+      "evidence": [
+        "benchmark README records the baseline: legacy Gradle build fails before tests because historical WebRTC/libyuv artifacts cannot be resolved",
+        "versions.gradle lines 13/71 pin org.webrtc:google-webrtc:1.0.32006, pulled transitively by com.github.team-telnyx:telnyx-meet-android-sdk:0.3.1@aar (jitpack)",
+        "app/build.gradle throws GradleException when local.properties is absent, coupling even configuration to a credential file",
+        "after the dependency is replaced the existing 8-test instrumentation suite must run on the Pixel2 API 29 spec"
+      ]
+    },
+    {
+      "id": "ios-simulator-build-and-tests",
+      "kind": "platform",
+      "status": "blocked_environmental",
+      "owner": "test",
+      "evidence": [
+        "no iosMain/iosTest source sets, no CocoaPods/gradle plugin config, and no iOS app target exist at base",
+        "sandbox is Linux: simulator execution requires macOS runners with Xcode and CocoaPods",
+        "blocker is environmental (toolchain + missing code being introduced by the migration); runner availability must be proven by the CI gate before claiming pass"
+      ]
+    },
+    {
+      "id": "meeting-contract",
+      "kind": "contract",
+      "status": "fail_code",
+      "owner": "both",
+      "evidence": [
+        "no shared meeting-engine contract exists; Android logic lives in app/src/main/java/com/telnyx/video and com.telnyx.meet",
+        "contract must publish capability state for camera, microphone, participants, chat, screen sharing, active speaker, and network statistics (mission criterion 5)",
+        "reviewer must verify both engines implement the identical interface; test track must cover the contract with common tests"
+      ]
+    },
+    {
+      "id": "workflow-regression",
+      "kind": "integration",
+      "status": "blocked_mixed",
+      "owner": "test",
+      "evidence": [
+        "execution is blocked by the same dependency-resolution failure as the Android build gate",
+        "coverage gap is a code failure: only ManageRoomDetailsActivityTest exercises room workflows; no room-discovery, join, meeting-controls, chat, or participant tests exist",
+        "iOS fallback behaviors must be asserted honestly disabled, not simulated"
+      ]
+    },
+    {
+      "id": "dependency-resolution",
+      "kind": "supply-chain",
+      "status": "blocked_environmental",
+      "owner": "test",
+      "evidence": [
+        "clean-checkout resolution of the legacy artifact graph fails; the artifact repository no longer serves the historical WebRTC/libyuv binaries",
+        "root cause is environmental (unavailable artifacts), while the fix — resolvable reproducible dependencies — is in the migration's included scope",
+        "evidence required: clean dependency-resolution report before any test gate is declared green"
+      ]
+    },
+    {
+      "id": "credential-hygiene",
+      "kind": "security",
+      "status": "fail_code",
+      "owner": "both",
+      "evidence": [
+        "local.properties is tracked in git at the base commit and contains an API_KEY entry (value redacted here)",
+        ".github/workflows/firebase.yml injects secrets.API_KEY into local.properties and requires secrets.SERVICE_ACCOUNT; neither is available in the sandbox",
+        "required fix is in scope: untrack the file, extend .gitignore, add a secret-free example, and prove absence from generated evidence with a secret scan plus git-index check",
+        "reviewer independently inspects the produced tree for any historical secret values"
+      ]
+    },
+    {
+      "id": "branch-isolation",
+      "kind": "delivery",
+      "owner": "review",
+      "status": "pending",
+      "evidence": [
+        "this scout performs zero writes outside benchmark/kmp-fast-vm-test/scouts/verification.json",
+        "final proof requires git log/ref evidence that all writes landed on the fork's kmp-fast-vm-test branch and that upstream and main in both repositories were not mutated (mission criteria 10-11)",
+        "pending until merge/review gates execute; reviewer owns the git-ref diff"
+      ]
+    },
+    {
+      "id": "documentation",
+      "kind": "review",
+      "status": "fail_code",
+      "owner": "review",
+      "evidence": [
+        "README.md documents neither build, test, migration, capability matrix, nor architecture overview",
+        "mission requires architecture overview, capability matrix, build instructions, test instructions, and migration notes as the final repository state",
+        "reviewer owns acceptance of the docs; test track links capability rows to adapter tests"
+      ]
+    }
+  ],
+  "check_families": {
+    "unit": [
+      "existing app/src/test JUnit4 suite (1 trivial test) — insufficient for any gate alone",
+      "proposed commonTest suites for domain/reducers/validators with coroutines-test for Flow and suspend semantics",
+      "androidUnitTest for JVM-side Android logic once the shared module exists"
+    ],
+    "integration": [
+      "workflow regression: room discovery, create, join, meeting controls, participants, chat — must preserve supported Android behavior and honest iOS fallbacks",
+      "repository/Ktor networking integration tests against mocked transport (ktor-client test deps already declared)"
+    ],
+    "ui_sample_app": [
+      "app-debug + app-debug-androidTest run on Firebase Test Lab (tests.yml: android-pixel-2, Pixel2 API 29, en, portrait)",
+      "Espresso suite ManageRoomDetailsActivityTest is the sample-app UI baseline; compose-migrated screens require equivalent instrumentation coverage",
+      "blocked without device farm + SERVICE_ACCOUNT; classify as environmental when unexecuted"
+    ],
+    "parity_android_ios": [
+      "both engines implement one capability-aware shared meeting contract",
+      "capability matrix rows: camera, microphone, participants, chat, screen sharing, active speaker, network statistics — each row linked to adapter tests on both platforms",
+      "unsupported iOS features must surface explicit disabled capability state, never simulated success",
+      "iOS adapter validation via Objective-C/CocoaPods interop compile plus simulator tests"
+    ],
+    "static_architecture": [
+      "source-set presence check (commonMain/commonTest/androidMain/androidUnitTest/iosMain/iosTest) from a clean checkout",
+      "forbidden-import scan of commonMain: android.*, androidx.*, UIKit",
+      "forbidden-construct scan of shared production code: LiveData, Retrofit Callback, GlobalScope, unmanaged CoroutineScope",
+      "Qodana + CodeQL SARIF upload already configured in .github/workflows/code_quality.yml; extend for KMP source sets"
+    ],
+    "security": [
+      "secret scan of the produced tree and generated evidence",
+      "git-index proof that local.properties and equivalents are untracked and ignored",
+      "verify no historical secret values remain reachable (e.g., via git history) and that a secret-free example replaces them",
+      "confirm CI secrets (API_KEY, SERVICE_ACCOUNT) are referenced only through the secrets store"
+    ],
+    "merge_review": [
+      "PRs target kmp-fast-vm-test only on the fork; reviewer verifies no upstream or main mutation with git-ref evidence",
+      "reviewer sign-off tied to immutable evidence (commit SHAs, report files) per mission evidence requirement 7",
+      "CI must run the KMP-aware workflow set on the PR before merge; merge allowed only on the fork's target branch",
+      "cost and FastVM cleanup receipts close the evidence ledger"
+    ]
+  },
+  "environmental_blockers": [
+    "unavailable legacy artifacts org.webrtc:google-webrtc:1.0.32006 and com.github.team-telnyx:telnyx-meet-android-sdk:0.3.1 (jitpack) — Gradle fails during dependency resolution before tests; recorded as baseline evidence in benchmark/kmp-fast-vm-test/README.md",
+    "no Android device/emulator in the sandbox; instrumentation and UI suites require the Firebase Test Lab spec with secrets.API_KEY and secrets.SERVICE_ACCOUNT",
+    "no macOS/Xcode/CocoaPods toolchain in the Linux sandbox for iOS simulator build and tests",
+    "ci_minutes budget is 0 for this scout task, so no gate may be executed here; execution evidence is produced by the DAG owners in later stages"
+  ],
+  "code_failures": [
+    "tracked credential file local.properties with API_KEY at base commit (credential-hygiene gate red)",
+    "no KMP source sets, shared module, or shared meeting contract exist (project-structure, common-boundary, meeting-contract gates red)",
+    "no StateFlow/effect presentation contract or tests for coroutine semantics (coroutine-boundary gate red)",
+    "test coverage is one trivial unit test plus one UI suite; no domain, repository, capability, or parity tests (workflow-regression gate coverage gap)",
+    "README.md lacks build/test/migration/architecture documentation (documentation gate red)",
+    "app/build.gradle hard-fails when local.properties is missing, coupling builds to credentials"
+  ],
+  "independent_work": {
+    "test_track": [
+      "executes dependency-resolution, Android build/unit/instrumentation, iOS simulator, static scans, and integration regressions",
+      "owns hidden-suite execution once the sealed digest is frozen; same suite must be reused for the AFK baseline"
+    ],
+    "review_track": [
+      "independently reviews gate evidence, capability matrix, documentation completeness, and branch-isolation git proofs",
+      "performs the second-opinion secret/credential review rather than trusting the test track's scan output"
+    ],
+    "rule": "no agent may author both the passing evidence and its acceptance; reviewer receipts are separate artifacts (mission evidence requirement 7)"
+  },
+  "verification_dag": [
+    {
+      "id": "dag-deps-resolve",
+      "rank": 1,
+      "risk": "high",
+      "gates": ["dependency-resolution", "android-build-and-tests"],
+      "depends_on": [],
+      "owner": "test",
+      "reads": ["versions.gradle", "build.gradle", "app/build.gradle", "gradle/**", "benchmark/kmp-fast-vm-test/README.md"],
+      "writes": ["gradle/**", "app/build.gradle", "build/reports/dependency-resolution/**"],
+      "note": "replace unresolvable legacy artifacts first; every downstream execution gate depends on this"
+    },
+    {
+      "id": "dag-credential-hygiene",
+      "rank": 2,
+      "risk": "high",
+      "gates": ["credential-hygiene"],
+      "depends_on": [],
+      "owner": "both",
+      "reads": ["local.properties", ".gitignore", "app/build.gradle", ".github/workflows/firebase.yml"],
+      "writes": [".gitignore", "local.properties.example", "app/build.gradle", ".git/index"],
+      "note": "untrack and ignore the credential file, ship a secret-free example; security scan and git-index proof close the gate"
+    },
+    {
+      "id": "dag-kmp-structure",
+      "rank": 3,
+      "risk": "high",
+      "gates": ["project-structure", "common-boundary"],
+      "depends_on": ["dag-deps-resolve"],
+      "owner": "test",
+      "reads": ["app/src/main/java/com/telnyx/**", "benchmark/kmp-fast-vm-test/mission-brief.json"],
+      "writes": ["shared/src/commonMain/**", "shared/src/commonTest/**", "shared/src/androidMain/**", "shared/src/androidUnitTest/**", "shared/src/iosMain/**", "shared/src/iosTest/**", "settings.gradle"],
+      "note": "source-set existence is a precondition for all static scans and shared tests"
+    },
+    {
+      "id": "dag-static-scan",
+      "rank": 4,
+      "risk": "medium",
+      "gates": ["common-boundary", "coroutine-boundary"],
+      "depends_on": ["dag-kmp-structure"],
+      "owner": "test",
+      "reads": ["shared/src/commonMain/**", "app/src/main/java/com/telnyx/**"],
+      "writes": ["build/reports/static-scan/**", ".github/workflows/code_quality.yml"],
+      "note": "forbidden imports and unstructured coroutine constructs must be provably absent from shared production code"
+    },
+    {
+      "id": "dag-android-tests",
+      "rank": 5,
+      "risk": "high",
+      "gates": ["android-build-and-tests", "coroutine-boundary"],
+      "depends_on": ["dag-deps-resolve", "dag-credential-hygiene", "dag-kmp-structure"],
+      "owner": "test",
+      "reads": ["app/**", "shared/src/**"],
+      "writes": ["app/src/test/**", "app/src/androidTest/**", "tests.yml", "build/reports/tests/**"],
+      "note": "unit plus instrumentation suites, executed on the Pixel2 API 29 spec; device-farm secrets are environmental"
+    },
+    {
+      "id": "dag-contract-parity",
+      "rank": 6,
+      "risk": "high",
+      "gates": ["meeting-contract", "workflow-regression"],
+      "depends_on": ["dag-kmp-structure"],
+      "owner": "both",
+      "reads": ["shared/src/commonMain/**", "app/src/main/java/com/telnyx/video/**", "shared/src/iosMain/**"],
+      "writes": ["shared/src/commonTest/**", "shared/src/androidUnitTest/**", "docs/capability-matrix.md"],
+      "note": "one shared contract; capability rows for camera, mic, participants, chat, screen share, active speaker, network stats linked to adapter tests on both platforms"
+    },
+    {
+      "id": "dag-ios-simulator",
+      "rank": 7,
+      "risk": "high",
+      "gates": ["ios-simulator-build-and-tests", "meeting-contract"],
+      "depends_on": ["dag-kmp-structure", "dag-contract-parity"],
+      "owner": "test",
+      "reads": ["shared/src/iosMain/**", "shared/src/iosTest/**"],
+      "writes": ["shared/src/iosTest/**", "build/reports/ios/**", ".github/workflows/ios.yml"],
+      "note": "blocked until macOS/Xcode runners exist; simulator logs are the required evidence"
+    },
+    {
+      "id": "dag-integration-regression",
+      "rank": 8,
+      "risk": "medium",
+      "gates": ["workflow-regression"],
+      "depends_on": ["dag-android-tests", "dag-contract-parity"],
+      "owner": "test",
+      "reads": ["app/src/androidTest/**", "app/src/main/java/com/telnyx/meet/**", "shared/src/**"],
+      "writes": ["app/src/androidTest/**", "build/reports/integration/**"],
+      "note": "prove supported Android workflows preserved and iOS fallbacks honestly disabled"
+    },
+    {
+      "id": "dag-docs-review",
+      "rank": 9,
+      "risk": "low",
+      "gates": ["documentation"],
+      "depends_on": ["dag-static-scan", "dag-contract-parity"],
+      "owner": "review",
+      "reads": ["README.md", "benchmark/kmp-fast-vm-test/**", ".github/pull_request_template.md"],
+      "writes": ["README.md", "docs/**", ".github/pull_request_template.md"],
+      "note": "architecture overview, capability matrix, build, test, and migration notes; reviewer-owned acceptance"
+    },
+    {
+      "id": "dag-branch-merge",
+      "rank": 10,
+      "risk": "medium",
+      "gates": ["branch-isolation", "documentation"],
+      "depends_on": ["dag-android-tests", "dag-ios-simulator", "dag-integration-regression", "dag-docs-review"],
+      "owner": "review",
+      "reads": ["benchmark/kmp-fast-vm-test/freeze-manifest.json", ".github/**", "git:refs/heads/main", "git:refs/remotes/upstream/*"],
+      "writes": [".github/workflows/**", "benchmark/kmp-fast-vm-test/scouts/**"],
+      "note": "git-ref diff proves only kmp-fast-vm-test on the fork moved; merge receipts and CI evidence close the ledger"
+    }
+  ],
+  "acceptance_coverage_complete": true,
+  "coverage_of_frozen_gates": [
+    "project-structure", "common-boundary", "coroutine-boundary", "android-build-and-tests",
+    "ios-simulator-build-and-tests", "meeting-contract", "workflow-regression",
+    "dependency-resolution", "credential-hygiene", "branch-isolation", "documentation"
+  ],
+  "budget_compliance": {
+    "ci_minutes_used": 0,
+    "wall_minutes_used": 8,
+    "note": "static inspection only; no Gradle, emulator, device-farm, or CI execution"
+  }
+}

@@ -1,0 +1,599 @@
+{
+  "schema_version": "1.0",
+  "task_id": "scout-architecture",
+  "assignment_id": "assignment-scout-architecture-915dbe00",
+  "candidate_id": "candidate-scout-architecture-915dbe00",
+  "run_id": "scout-architecture-915dbe00",
+  "generated_utc_date": "2026-11-22",
+  "repository": {
+    "head_commit": "7ec8f3b5785a600b1d4dffc957c0bbe58423c1a3",
+    "head_commit_note": "git log shows 7ec8f3b 'benchmark: freeze Telnyx Meet KMP mission' on top of 3276e28 'Version Update'.",
+    "mission_brief_base_commit": "3276e2887c7eced7a4dcbec7f726d7eb0f3d2574",
+    "mission_brief": "benchmark/kmp-fast-vm-test/mission-brief.json",
+    "acceptance_gates": "benchmark/kmp-fast-vm-test/acceptance-gates.json",
+    "freeze_manifest": "benchmark/kmp-fast-vm-test/freeze-manifest.json",
+    "read_set_inspected": [
+      "benchmark/kmp-fast-vm-test/README.md",
+      "benchmark/kmp-fast-vm-test/mission-brief.json",
+      "benchmark/kmp-fast-vm-test/acceptance-gates.json",
+      "benchmark/kmp-fast-vm-test/freeze-manifest.json",
+      "app/src",
+      "app/build.gradle",
+      "build.gradle",
+      "settings.gradle",
+      "versions.gradle",
+      "gradle.properties",
+      "gradle/wrapper/gradle-wrapper.properties",
+      "tests.yml",
+      ".github/workflows",
+      ".gitignore",
+      "README.md"
+    ]
+  },
+  "scope_guard": {
+    "implemented_migration_code": false,
+    "files_written": ["benchmark/kmp-fast-vm-test/scouts/architecture.json"],
+    "credential_handling": "Credential-bearing paths (local.properties, github.properties) are cited by name only. No credential values and no file contents from local.properties or github.properties are reproduced in this report or its evidence.",
+    "claims_cite_repository_paths": true
+  },
+  "summary": {
+    "current_state": "Single-module Android sample app (View/Fragment/XML UI, Hilt DI, Retrofit/OkHttp REST client) that consumes the Telnyx Android Video SDK AAR for WebRTC meeting behavior. One god ViewModel, LiveData state, no repository/use-case layer, no Compose, and no KMP source sets.",
+    "modules": 1,
+    "screens": 7,
+    "rest_endpoints": 5,
+    "compose_usage": "none",
+    "kmp_source_sets_present": false,
+    "android_target": "minSdk 23, targetSdk/compileSdk 34 (app/build.gradle)",
+    "test_inheritance": "Instrumentation profile pinned in tests.yml: Pixel 2, API 29, portrait, en"
+  },
+  "module_layout": {
+    "evidence": ["settings.gradle", "build.gradle", "versions.gradle", "app/build.gradle", "gradle/wrapper/gradle-wrapper.properties"],
+    "modules": [
+      {
+        "name": ":app",
+        "type": "android-application",
+        "evidence": ["settings.gradle", "app/build.gradle"],
+        "facts": [
+          "settings.gradle declares rootProject.name = 'Telnyx Meet' and a single included module ':app'.",
+          "app/build.gradle applies com.android.application, kotlin-android, kotlin-kapt, dagger.hilt.android.plugin, and androidx.navigation.safeargs; viewBinding is enabled.",
+          "The Telnyx Android Video SDK is consumed as 'com.github.team-telnyx:telnyx-meet-android-sdk:0.3.1@aar' from JitPack (app/build.gradle).",
+          "Third-party stack: Retrofit 2.9 + Gson, OkHttp 4.9, coroutines 1.4.2, Hilt 2.48 (kapt), CameraX, Dexter 6.2.2, Timber, Bugsnag (versions.gradle, app/build.gradle)."
+        ]
+      },
+      {
+        "name": "build-tooling",
+        "type": "gradle-config",
+        "evidence": ["build.gradle", "versions.gradle", "gradle/wrapper/gradle-wrapper.properties", "gradle.properties", ".github/workflows/code_quality.yml", ".github/workflows/firebase.yml"],
+        "facts": [
+          "Gradle wrapper is 7.2 (gradle/wrapper/gradle-wrapper.properties); AGP 7.1.3 (build.gradle).",
+          "The Kotlin Gradle plugin is declared twice with conflicting versions: ext.kotlin_version = '1.8.22' in build.gradle vs versions.kotlin = '1.5.10' in versions.gradle; both are added to the buildscript classpath.",
+          "ktlint is applied to all projects; kover 0.5.0 is applied; detekt 1.20.0 is on the classpath but not applied (build.gradle).",
+          "Repositories include jcenter() and mavenLocal() (build.gradle); jcenter is end-of-life and unstable for the KMP migration.",
+          "org.webrtc:google-webrtc:1.0.32006 is declared as deps.webrtc in versions.gradle; app production code imports org.webrtc.* types (RoomFragment, SharingFullScreenFragment, ParticipantTileAdapter) that the Telnyx AAR supplies transitively. benchmark/kmp-fast-vm-test/README.md records that legacy WebRTC/libyuv artifacts cannot be resolved.",
+          "CI today: Qodana static scan (.github/workflows/code_quality.yml) and Firebase Test Lab APK flow that writes local.properties from a secret (.github/workflows/firebase.yml)."
+        ]
+      }
+    ],
+    "source_sets": {
+      "evidence": ["app/src/main", "app/src/test/java/com/telnyx/meet/ExampleUnitTest.kt", "app/src/androidTest/java/com/telnyx/meet/ui/ManageRoomDetailsActivityTest.kt", "app/src/androidTest/java/com/telnyx/meet/testhelpers/BaseUITest.kt", "tests.yml"],
+      "facts": [
+        "app/src/main: production Android code and resources; app/src/test: one placeholder unit test (ExampleUnitTest.kt); app/src/androidTest: Espresso UI suite (ManageRoomDetailsActivityTest.kt) plus shared helpers (testhelpers/).",
+        "No commonMain, androidMain, iosMain, iosTest, or androidUnitTest source sets exist yet; the KMP layout must be created per mission-brief.json acceptance criteria."
+      ]
+    }
+  },
+  "source_layout": {
+    "evidence": ["app/src/main/java/com/telnyx/meet", "app/src/main/java/com/telnyx/video/sdk/ui/adapters/WrapGridLayoutManager.kt"],
+    "packages": [
+      {
+        "path": "app/src/main/java/com/telnyx/meet",
+        "role": "Application root: App.kt (@HiltAndroidApp, plants Timber), BaseFragment.kt (ViewBinding helper), BaseViewModel.kt (empty ViewModel subclass)."
+      },
+      {
+        "path": "app/src/main/java/com/telnyx/meet/data",
+        "role": "Data layer. RoomService.kt (Retrofit interface) plus data/model, data/model/request, data/model/response DTOs (Gson plain data classes: TokenInfo, RefreshTokenInfo, RoomDetails, RoomListMetadata, Create*/Refresh* request/response)."
+      },
+      {
+        "path": "app/src/main/java/com/telnyx/meet/di",
+        "role": "Hilt wiring: NetworkModule.kt (Retrofit/OkHttp/auth header), AppModule.kt (Context, Resources, Gson, SharedPreferences), FragmentFactoryModule.kt + FragmentKey.kt (fragment multi-binding), ApiKey.kt and BaseUrl.kt qualifiers."
+      },
+      {
+        "path": "app/src/main/java/com/telnyx/meet/navigator",
+        "role": "Navigator.kt wraps androidx.navigation.NavController behind a Hilt singleton (UI-owned navigation handle)."
+      },
+      {
+        "path": "app/src/main/java/com/telnyx/meet/ui",
+        "role": "All screens: 2 activities and 6 fragments + RoomsViewModel; subpackages ui/adapters (4 RecyclerView adapters), ui/factory (DefaultFragmentFactory.kt, DefaultFragmentFactoryEntryPoint.kt), ui/models (4 UI data classes), ui/utilities (KeyboardExtensions.kt, Utils.kt incl. calculateTokenExpireTime)."
+      },
+      {
+        "path": "app/src/main/java/com/telnyx/video/sdk/ui/adapters/WrapGridLayoutManager.kt",
+        "role": "A vendored copy of an SDK class declared under the SDK package com.telnyx.video.sdk.ui.adapters inside app sources; duplicates SDK behavior and complicates boundary hygiene (candidate for deletion during migration)."
+      },
+      {
+        "path": "app/src/main/res",
+        "role": "15 XML layouts (res/layout), single menu (res/menu/room_menu.xml), navigation graph (res/navigation/navigation_main.xml), 34 strings (res/values/strings.xml), themes/colors, 35 drawable files (vectors and shapes)."
+      },
+      {
+        "path": "app/src/main/assets/clouds.jpeg",
+        "role": "Virtual-background image consumed by TelnyxVideoProcessing (RoomFragment.applyBackgroundFilter)."
+      },
+      {
+        "path": "app/src/androidTest",
+        "role": "Espresso suite ManageRoomDetailsActivityTest.kt (launch, room create, media toggles, stats dialog, chat, participants, name validation) with testhelpers/BaseUITest.kt, BaseTestInstrumentation.kt, JUnitTree.kt, SystemUIDemoModeHelper.kt, SystemUIDemoModeRule.kt, TestConstants.kt."
+      }
+    ]
+  },
+  "android_boundaries": {
+    "ui": {
+      "evidence": ["app/src/main/AndroidManifest.xml", "app/src/main/res/navigation/navigation_main.xml", "app/src/main/java/com/telnyx/meet/ui"],
+      "screens": [
+        {
+          "screen": "SplashScreenActivity",
+          "evidence": "app/src/main/java/com/telnyx/meet/ui/SplashScreenActivity.kt",
+          "role": "Launcher (AndroidManifest); immediately forwards to ManageRoomActivity."
+        },
+        {
+          "screen": "ManageRoomActivity",
+          "evidence": "app/src/main/java/com/telnyx/meet/ui/ManageRoomActivity.kt",
+          "role": "Single-activity host; injects DefaultFragmentFactory via Hilt EntryPointAccessors, hosts NavHostFragment, wires Navigator to NavController, starts Bugsnag unless IS_APP_TESTING."
+        },
+        {
+          "screen": "JoinRoomFragment",
+          "evidence": "app/src/main/java/com/telnyx/meet/ui/JoinRoomFragment.kt",
+          "role": "Participant name + room UUID entry (prefilled from BuildConfig.DEFAULT_ROOM), local camera preview via CameraX (ProcessCameraProvider/Preview/CameraSelector), permission gate via RoomsViewModel.checkPermissions."
+        },
+        {
+          "screen": "RoomListFragment",
+          "evidence": "app/src/main/java/com/telnyx/meet/ui/RoomListFragment.kt",
+          "role": "Paged room list (RoomAdapter, infinite scroll calling getMoreRooms), swipe-to-delete with undo snackbar (deleteRoom on dismiss), name validation."
+        },
+        {
+          "screen": "RoomCreateFragment",
+          "evidence": "app/src/main/java/com/telnyx/meet/ui/RoomCreateFragment.kt",
+          "role": "Room name entry, room creation, token creation, token display, connect, and forward to RoomFragment with safe-args (roomId, roomName, refreshToken, refreshTime)."
+        },
+        {
+          "screen": "RoomFragment (meeting)",
+          "evidence": "app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt",
+          "role": "1159-line meeting screen: participant tile grid (ParticipantTileAdapter + WrapGridLayoutManager), WebRTC SurfaceViewRenderer sinks, view modes (full grid / main share / full screen), menu controls (camera, mic, flip, blur, virtual background, audio output, network quality, report issue, chat, participants), stats polling loop, token-refresh timer, share-view orchestration."
+        },
+        {
+          "screen": "RoomChatFragment",
+          "evidence": "app/src/main/java/com/telnyx/meet/ui/RoomChatFragment.kt",
+          "role": "Text chat: MessageListAdapter (self/remote/admin rows), recipient multi-select dialog, send path through RoomsViewModel.sendTextRoomMessage; history cached in VM memory and restored on destroy."
+        },
+        {
+          "screen": "ParticipantsFragment",
+          "evidence": "app/src/main/java/com/telnyx/meet/ui/ParticipantsFragment.kt",
+          "role": "Read-only participants list (ParticipantsAdapter) observing join/leave/speak/stream-change events."
+        },
+        {
+          "screen": "SharingFullScreenFragment",
+          "evidence": "app/src/main/java/com/telnyx/meet/ui/SharingFullScreenFragment.kt",
+          "role": "Landscape fullscreen rendering of a remote 'presentation' stream onto SurfaceViewRenderer; full-screen system-UI enforcer coroutine; navigates back when sharing stops."
+        }
+      ],
+      "navigation": {
+        "evidence": "app/src/main/res/navigation/navigation_main.xml",
+        "facts": [
+          "Destinations: joinRoomFragment (start), roomListFragment, roomCreateFragment, roomFragment, roomParticipantsFragment, roomChatFragment, sharingFullScreenFragment.",
+          "Safe-args actions carry participantName, roomId, roomName, refreshToken, refreshTime between destinations."
+        ]
+      },
+      "ui_kit": {
+        "evidence": ["app/src/main/java/com/telnyx/meet/BaseFragment.kt", "app/src/main/java/com/telnyx/meet/ui/adapters"],
+        "facts": "XML ViewBinding + RecyclerView adapters + Material components; zero Compose usage; BaseFragment<FRAGMENT: ViewBinding> shares inflate/destroy logic."
+      }
+    },
+    "state": {
+      "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt", "app/src/main/java/com/telnyx/meet/BaseViewModel.kt", "app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt"],
+      "facts": [
+        "RoomsViewModel (@HiltViewModel) is the only ViewModel and a god object: it issues Retrofit enqueue calls, constructs and stores the SDK Room object ('lateinit var room: Room'), requests Android permissions via Dexter, builds an Android audio-output AlertDialog, and keeps chat history in memory.",
+        "All durable UI state is LiveData (MutableLiveData); one-off events use the SDK's com.telnyx.video.sdk.Event wrapper consumed via getContentIfNotHandled (RoomsViewModel lines 63-114).",
+        "The SDK Room exposes LiveData observables (connection status, participants, state changes, chat delivery), so the ViewModel re-exposes SDK LiveData directly; no StateFlow exists anywhere.",
+        "Unstructured concurrency: RoomFragment.startCounter, checkInitialMediaStatus, and startStatsJob each create CoroutineScope(Dispatchers.Main/Default).launch directly (RoomFragment lines 176-189, 505, 528, 844); SharingFullScreenFragment runs an unmanaged 4-second full-screen-enforcer loop. None are lifecycle-scoped; BaseViewModel is empty.",
+        "Token refresh scheduling lives in the fragment (mRefreshTimer computed by ui/utilities/Utils.kt calculateTokenExpireTime at 90% of remaining validity), not in the ViewModel or domain layer.",
+        "No repository, use case, mapper, or persistence layer exists; AppModule provides SharedPreferences (di/AppModule.kt) but no production code consumes it."
+      ]
+    },
+    "network": {
+      "evidence": ["app/src/main/java/com/telnyx/meet/data/RoomService.kt", "app/src/main/java/com/telnyx/meet/di/NetworkModule.kt", "app/build.gradle", ".github/workflows/firebase.yml"],
+      "facts": [
+        "RoomService defines 5 Retrofit endpoints returning retrofit2.Call: GET rooms (paged), POST rooms, DELETE rooms/{room_id}, POST rooms/{room_id}/actions/generate_join_client_token, POST rooms/{room_id}/actions/refresh_client_token.",
+        "NetworkModule provides base URL https://api.telnyx.com/v2/ (also re-built with HttpUrl.Builder inside providesRoomService), a BODY-level OkHttp logging interceptor, an Authorization header injected from BuildConfig.API_KEY, and 100s connect/read timeouts.",
+        "BuildConfig.API_KEY and BuildConfig.DEFAULT_ROOM are injected from local.properties by app/build.gradle buildTypes (API_KEY also becomes a resValue); the Gradle build throws GradleException if local.properties is unreadable.",
+        "Mission-relevant violation (future gate): production async is Retrofit Callback + LiveData, which mission-brief.json acceptance criteria forbid in migrated shared code; target is suspend/Flow with Ktor replacing Retrofit/Gson/OkHttp.",
+        "The same REST surface is the seam for Ktor in WP-2; ktor 1.6.0 already appears as a test-only dependency (versions.gradle)."
+      ]
+    }
+  },
+  "shared_kmp_seams": [
+    {
+      "id": "S1",
+      "name": "REST API surface and DTOs",
+      "classification": "shared",
+      "current_evidence": ["app/src/main/java/com/telnyx/meet/data/RoomService.kt", "app/src/main/java/com/telnyx/meet/data/model", "app/src/main/java/com/telnyx/meet/data/model/request", "app/src/main/java/com/telnyx/meet/data/model/response"],
+      "target_common_home": "shared/src/commonMain/kotlin/**/data",
+      "notes": "Retrofit interface + Gson POJOs are platform-free logic (network calls, JSON models). Port to Ktor client with kotlinx.serialization and suspend functions; keep endpoint and payload shape identical to preserve parity."
+    },
+    {
+      "id": "S2",
+      "name": "Token lifecycle and refresh scheduling",
+      "classification": "shared",
+      "current_evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt", "app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt", "app/src/main/java/com/telnyx/meet/ui/utilities/Utils.kt"],
+      "target_common_home": "shared/src/commonMain/kotlin/**/domain/token",
+      "notes": "createTokenForRoom/refreshClientToken API flow plus the 90%-expiry timer math (calculateTokenExpireTime) and the delay-based restart loop are platform-independent; only the timer's execution scope is platform-owned."
+    },
+    {
+      "id": "S3",
+      "name": "Meeting engine contract (capability-aware)",
+      "classification": "shared",
+      "current_evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt", "app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt", "benchmark/kmp-fast-vm-test/acceptance-gates.json"],
+      "target_common_home": "shared/src/commonMain/kotlin/**/meeting",
+      "notes": "Today the UI calls the Android-only Room SDK directly. Extract one interface covering connect/disconnect, publish/update stream, subscribe/unsubscribe, participants, chat send/receive, active speaker, network stats, and a capability state per feature; both platform adapters implement it (see P-seams)."
+    },
+    {
+      "id": "S4",
+      "name": "Presentation state and one-off effects",
+      "classification": "shared",
+      "current_evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt", "app/src/main/java/com/telnyx/meet/BaseViewModel.kt", "app/src/main/java/com/telnyx/meet/ui/RoomChatFragment.kt"],
+      "target_common_home": "shared/src/commonMain/kotlin/**/presentation",
+      "notes": "Replace LiveData + SDK Event with StateFlow UI state and SharedFlow/channel effects with explicit buffering and lifecycle cancellation; the empty BaseViewModel and god ViewModel split into per-screen presenters."
+    },
+    {
+      "id": "S5",
+      "name": "UI models",
+      "classification": "shared",
+      "current_evidence": ["app/src/main/java/com/telnyx/meet/ui/models"],
+      "target_common_home": "shared/src/commonMain/kotlin/**/presentation/model",
+      "notes": "MessageUI, SelectedParticipant, StatsParticipant, and the StreamStats sealed hierarchy (Local/Remote Audio/Video stats) are pure Kotlin and belong in commonMain once the SDK types they wrap (Message, Participant) are mapped behind adapters."
+    },
+    {
+      "id": "S6",
+      "name": "Navigation route model",
+      "classification": "shared",
+      "current_evidence": ["app/src/main/res/navigation/navigation_main.xml", "app/src/main/java/com/telnyx/meet/navigator/Navigator.kt"],
+      "target_common_home": "shared/src/commonMain/kotlin/**/navigation",
+      "notes": "Define destination routes and argument types (participantName, roomId, roomName, refreshToken, refreshTime) once; Android NavHost and iOS navigation consume the shared route model."
+    },
+    {
+      "id": "S7",
+      "name": "Room list pagination",
+      "classification": "shared",
+      "current_evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt", "app/src/main/java/com/telnyx/meet/ui/RoomListFragment.kt"],
+      "target_common_home": "shared/src/commonMain/kotlin/**/domain/rooms",
+      "notes": "mTotalPages/mLastRetrievedPage/getMoreRooms plus the scroll-threshold trigger are pure logic; only the scroll event source is platform UI."
+    },
+    {
+      "id": "S8",
+      "name": "String resources",
+      "classification": "shared",
+      "current_evidence": ["app/src/main/res/values/strings.xml"],
+      "target_common_home": "composeApp/src/commonMain/composeResources",
+      "notes": "34 string resources migrate to Compose Multiplatform resources so shared screens render the same copy on both platforms."
+    }
+  ],
+  "platform_capability_seams": {
+    "android": [
+      {
+        "id": "A1",
+        "capability": "video SDK engine",
+        "classification": "platform-android",
+        "evidence": ["app/build.gradle", "app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt"],
+        "facts": "com.github.team-telnyx:telnyx-meet-android-sdk:0.3.1@aar supplies Room, PublishConfigHelper, TelnyxVideoProcessing, AudioDevice, Event, State/Status and the WebSocket stack; Room is constructed with an Android Context in RoomsViewModel.createTokenForRoom (lines 146-152), which must not leak into shared code."
+      },
+      {
+        "id": "A2",
+        "capability": "rendering",
+        "classification": "platform-android",
+        "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt", "app/src/main/java/com/telnyx/meet/ui/adapters/ParticipantTileAdapter.kt", "app/src/main/java/com/telnyx/meet/ui/SharingFullScreenFragment.kt"],
+        "facts": "org.webrtc.SurfaceViewRenderer and VideoTrack sinks render self/participant/presentation streams; lifecycle release is manual in onDestroyView/detach paths."
+      },
+      {
+        "id": "A3",
+        "capability": "camera capture",
+        "classification": "platform-android",
+        "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt", "app/src/main/java/com/telnyx/meet/ui/JoinRoomFragment.kt"],
+        "facts": "Local publish capture via PublishConfigHelper.createVideoTrack (front camera, 256x256@30) with start/stop/restart-on-resume semantics; pre-join preview uses CameraX ProcessCameraProvider."
+      },
+      {
+        "id": "A4",
+        "capability": "microphone capture",
+        "classification": "platform-android",
+        "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt"],
+        "facts": "PublishConfigHelper.createAudioTrack + updateStream toggling; mic/camera initial states carried through RoomsViewModel MediaOnStart flags."
+      },
+      {
+        "id": "A5",
+        "capability": "audio routing",
+        "classification": "platform-android",
+        "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt"],
+        "facts": "AudioDevice.PHONE_EARPIECE / BLUETOOTH / LOUDSPEAKER switched via room.setAudioOutputDevice; a device-selection AlertDialog is built inside the ViewModel (UI leak to fix in WP-7)."
+      },
+      {
+        "id": "A6",
+        "capability": "permissions",
+        "classification": "platform-android",
+        "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt", "app/src/main/AndroidManifest.xml"],
+        "facts": "Dexter runtime flow (RECORD_AUDIO, CAMERA, READ_MEDIA_* on Tiramisu+, storage on older) gated through permissionRequest LiveData; manifest declares INTERNET, CAMERA, RECORD_AUDIO, MODIFY_AUDIO_SETTINGS, FOREGROUND_SERVICE, media/storage permissions."
+      },
+      {
+        "id": "A7",
+        "capability": "video filters",
+        "classification": "platform-android",
+        "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt", "app/src/main/assets/clouds.jpeg"],
+        "facts": "TelnyxVideoProcessing.applyBackgroundBlur / applyVirtualBackground('clouds.jpeg'); no iOS equivalent is assumed (capability gap, see mission excluded scope)."
+      },
+      {
+        "id": "A8",
+        "capability": "crash reporting",
+        "classification": "platform-android",
+        "evidence": ["app/src/main/java/com/telnyx/meet/App.kt", "app/src/main/java/com/telnyx/meet/ui/ManageRoomActivity.kt", "app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt", "app/src/main/AndroidManifest.xml"],
+        "facts": "Bugsnag (App lifecycle, issue-report dialog with SDK state attachment); manifest carries a com.bugsnag.android.API_KEY meta-data value that must not be reproduced in evidence; treat as a secret-hygiene finding."
+      },
+      {
+        "id": "A9",
+        "capability": "webrtc statistics",
+        "classification": "platform-android",
+        "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt", "app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt"],
+        "facts": "getWebRTCStatsForStream(RTCStatsCollectorCallback) polled every 2s per selected stream; enable/disableNetworkMetricsReport per participant list; parse into Local/Remote Audio/Video stats models."
+      }
+    ],
+    "ios": [
+      {
+        "id": "I1",
+        "capability": "video SDK engine",
+        "classification": "platform-ios",
+        "status": "planned",
+        "evidence": ["benchmark/kmp-fast-vm-test/mission-brief.json"],
+        "facts": "Mission scope requires an iOS TelnyxVideoSdk adapter through supported Objective-C/CocoaPods interop; no iOS code exists at head, so every iOS seam below is created fresh by WP-5 and must be verified against the real iOS SDK before claiming parity."
+      },
+      {
+        "id": "I2",
+        "capability": "rendering",
+        "classification": "platform-ios",
+        "status": "planned",
+        "facts": "iOS video rendering replaces SurfaceViewRenderer (platform-agnostic video-frame sink abstraction at the contract boundary; iOS attaches its native view/Metal layer)."
+      },
+      {
+        "id": "I3",
+        "capability": "camera and microphone capture",
+        "classification": "platform-ios",
+        "status": "planned",
+        "facts": "iOS capture session (AVFoundation) behind the same contract; permission prompts are iOS system dialogs (Info.plist usage descriptions) rather than Dexter."
+      },
+      {
+        "id": "I4",
+        "capability": "audio routing",
+        "classification": "platform-ios",
+        "status": "planned",
+        "facts": "AVAudioSession category/mode and output-port selection map to the shared audio-routing command; device choices (receiver/speaker/bluetooth) are iOS-specific values."
+      },
+      {
+        "id": "I5",
+        "capability": "lifecycle",
+        "classification": "platform-ios",
+        "status": "planned",
+        "facts": "UIApplication lifecycle states and scene activation must drive connect/disconnect and capture restart semantics equivalent to Android's onStop/onSaveInstanceState behavior in RoomFragment."
+      },
+      {
+        "id": "I6",
+        "capability": "capability gaps",
+        "classification": "platform-ios",
+        "status": "must-verify",
+        "evidence": ["benchmark/kmp-fast-vm-test/mission-brief.json", "benchmark/kmp-fast-vm-test/acceptance-gates.json"],
+        "facts": "Blur/virtual background and any screen-share or stats features lacking iOS SDK parity must be published as explicitly unavailable capabilities with honest UI, never simulated (mission excluded scope: 'Inventing unsupported iOS SDK capabilities')."
+      }
+    ],
+    "capability_matrix": [
+      {
+        "feature": "camera",
+        "android_evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt"],
+        "android_evidence_note": "startCameraCapture/stopCameraCapture via PublishConfigHelper",
+        "android_status": "supported",
+        "ios_status": "planned; parity verify at WP-5",
+        "shared_contract_flag": "MeetingCapabilities.camera"
+      },
+      {
+        "feature": "microphone",
+        "android_evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt"],
+        "android_evidence_note": "startAudioCapture/stopAudioCapture via PublishConfigHelper",
+        "android_status": "supported",
+        "ios_status": "planned; parity verify at WP-5",
+        "shared_contract_flag": "MeetingCapabilities.microphone"
+      },
+      {
+        "feature": "participants",
+        "android_evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt"],
+        "android_evidence_note": "getParticipants plus join/leave participant events",
+        "android_status": "supported",
+        "ios_status": "planned; parity verify at WP-5",
+        "shared_contract_flag": "MeetingCapabilities.participants"
+      },
+      {
+        "feature": "chat",
+        "android_evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomChatFragment.kt"],
+        "android_evidence_note": "send, receive, and delivery-success/failed events",
+        "android_status": "supported",
+        "ios_status": "planned; parity verify at WP-5",
+        "shared_contract_flag": "MeetingCapabilities.chat"
+      },
+      {
+        "feature": "screen sharing (presentation view)",
+        "android_evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt", "app/src/main/java/com/telnyx/meet/ui/SharingFullScreenFragment.kt"],
+        "android_evidence_note": "subscribes to remote 'presentation' streams; local publish capability depends on the SDK",
+        "android_status": "subscribe-to-remote supported; local publish depends on SDK",
+        "ios_status": "must-verify; declare unavailable if SDK lacks parity",
+        "shared_contract_flag": "MeetingCapabilities.screenSharing"
+      },
+      {
+        "feature": "active speaker",
+        "android_evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt"],
+        "android_evidence_note": "getSpeakingParticipant talking events",
+        "android_status": "supported",
+        "ios_status": "planned; parity verify at WP-5",
+        "shared_contract_flag": "MeetingCapabilities.activeSpeaker"
+      },
+      {
+        "feature": "network statistics",
+        "android_evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt"],
+        "android_evidence_note": "getWebRTCStatsForStream plus network metrics report toggles",
+        "android_status": "supported",
+        "ios_status": "planned; expose equivalent stats or declare unavailable",
+        "shared_contract_flag": "MeetingCapabilities.networkStats"
+      }
+    ]
+  },
+  "migration_work_packages": [
+    {
+      "id": "WP-1",
+      "title": "KMP/CMP Gradle skeleton and dependency modernization",
+      "objective": "Create the Kotlin Multiplatform + Compose Multiplatform Gradle layout (shared + composeApp modules with commonMain/commonTest/androidMain/androidUnitTest/iosMain/iosTest), upgrade wrapper/Kotlin/AGP coherently, and remove jcenter/mavenLocal reliance so the legacy unavailable WebRTC/libyuv artifacts are no longer required.",
+      "depends_on": [],
+      "seams": ["S1", "S3"],
+      "read_paths": ["settings.gradle", "build.gradle", "versions.gradle", "gradle.properties", "gradle/wrapper/gradle-wrapper.properties", "app/build.gradle", "benchmark/kmp-fast-vm-test/mission-brief.json", "benchmark/kmp-fast-vm-test/acceptance-gates.json"],
+      "write_paths": ["settings.gradle.kts", "build.gradle.kts", "gradle/libs.versions.toml", "gradle/wrapper/gradle-wrapper.properties", "gradle.properties", "shared/build.gradle.kts", "shared/src/commonMain/**", "shared/src/commonTest/**", "shared/src/androidMain/**", "shared/src/androidUnitTest/**", "shared/src/iosMain/**", "shared/src/iosTest/**", "composeApp/build.gradle.kts", "composeApp/src/androidMain/**", "composeApp/src/iosMain/**", ".github/workflows/**"],
+      "test_plan": "Clean-checkout Gradle builds for common/Android/iOS targets; dependency-resolution gate proving org.webrtc:google-webrtc:1.0.32006 and jcenter()/mavenLocal() are absent from the graph; source-set existence check mirroring the mission's project-structure gate.",
+      "done_when": ["All six KMP source sets resolve and compile (empty modules acceptable)", "Dependency resolution succeeds from a clean environment without legacy unavailable artifacts", "Kotlin/AGP/Gradle versions are declared once in the version catalog"],
+      "independently_testable": true
+    },
+    {
+      "id": "WP-2",
+      "title": "Shared data layer: models, Ktor REST client, token repository",
+      "objective": "Port the 5-endpoint Rooms API and Gson DTOs to Ktor client + kotlinx.serialization with suspend functions, plus repository/use-case boundaries; replace BuildConfig-based auth with an injected credential provider.",
+      "depends_on": ["WP-1"],
+      "seams": ["S1", "S2"],
+      "read_paths": ["app/src/main/java/com/telnyx/meet/data/RoomService.kt", "app/src/main/java/com/telnyx/meet/data/model", "app/src/main/java/com/telnyx/meet/data/model/request", "app/src/main/java/com/telnyx/meet/data/model/response", "app/src/main/java/com/telnyx/meet/di/NetworkModule.kt", "app/src/main/java/com/telnyx/meet/di/AppModule.kt"],
+      "write_paths": ["shared/src/commonMain/kotlin/**/data/**", "shared/src/commonMain/kotlin/**/domain/**", "shared/src/commonTest/**"],
+      "test_plan": "commonTest coverage: one JSON contract test per endpoint payload (rooms list pagination, create room, error body, create/refresh token), Ktor MockEngine request-shape tests (headers, paths), and unit tests for repository paging behavior (WP-S7 logic).",
+      "done_when": ["No retrofit2.Call or Gson types remain in shared code", "All endpoints return suspend/Flow results", "DTO field names preserve API contract (e.g., recort_type typo is handled at mapping only)"],
+      "independently_testable": true
+    },
+    {
+      "id": "WP-3",
+      "title": "Capability-aware shared meeting contract",
+      "objective": "Define the single MeetingEngine/MeetingSession contract (connect, publish, subscribe, chat, stats, capabilities) with StateFlow state, SharedFlow effects, and a per-feature capability model so Android and iOS engines are substitutable.",
+      "depends_on": ["WP-1"],
+      "seams": ["S3", "S4", "S5"],
+      "read_paths": ["app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt", "app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt", "app/src/main/java/com/telnyx/meet/ui/SharingFullScreenFragment.kt", "benchmark/kmp-fast-vm-test/acceptance-gates.json"],
+      "write_paths": ["shared/src/commonMain/kotlin/**/meeting/**", "shared/src/commonTest/**"],
+      "test_plan": "commonTest: fake-engine state-machine tests (connect/disconnect/disconnected navigation), capability matrix coverage for the seven features, effect-buffering tests, and contract conformance tests both adapters must satisfy.",
+      "done_when": ["Contract compiles on all targets", "Capability states are explicit and exhaustive", "Fake engine passes all shared contract tests"],
+      "independently_testable": true
+    },
+    {
+      "id": "WP-4",
+      "title": "Android meeting engine adapter",
+      "objective": "Implement the shared contract on Android by wrapping the Telnyx Android SDK (Room/PublishConfigHelper/TelnyxVideoProcessing) with permission, audio-routing, lifecycle, and rendering glue; no Android types above the adapter.",
+      "depends_on": ["WP-3"],
+      "seams": ["A1", "A2", "A3", "A4", "A5", "A6", "A9"],
+      "read_paths": ["app/build.gradle", "app/src/main/AndroidManifest.xml", "app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt", "app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt", "app/src/main/java/com/telnyx/meet/ui/adapters/ParticipantTileAdapter.kt", "app/src/main/java/com/telnyx/meet/ui/SharingFullScreenFragment.kt", "app/src/main/java/com/telnyx/video/sdk/ui/adapters/WrapGridLayoutManager.kt"],
+      "write_paths": ["shared/src/androidMain/kotlin/**", "shared/src/androidUnitTest/**", "composeApp/src/androidMain/**"],
+      "test_plan": "androidUnitTest for adapter mapping (events to shared state, capability reporting, audio routing enum mapping); reuse ManageRoomDetailsActivityTest scenarios as the regression checklist mapped to the new UI (execution deferred to WP-8 CI device farm per tests.yml: Pixel 2 / API 29).",
+      "done_when": ["Adapter satisfies WP-3 contract tests on the Android target", "Android source sets import no shared-forbidden types (no LiveData/Retrofit in commonMain consumers)", "Legacy vendored WrapGridLayoutManager duplicate is removed or migrated"],
+      "independently_testable": true
+    },
+    {
+      "id": "WP-5",
+      "title": "iOS meeting engine adapter and app shell",
+      "objective": "Implement the same contract on iOS through the Telnyx iOS SDK via CocoaPods/Objective-C interop, build the iosApp shell (MainViewController), and publish honest capability states for anything the iOS SDK does not support.",
+      "depends_on": ["WP-3"],
+      "seams": ["I1", "I2", "I3", "I4", "I5", "I6"],
+      "read_paths": ["benchmark/kmp-fast-vm-test/mission-brief.json", "benchmark/kmp-fast-vm-test/acceptance-gates.json", "shared/src/commonMain/kotlin/**/meeting/**"],
+      "write_paths": ["shared/src/iosMain/kotlin/**", "shared/src/iosTest/**", "shared/build.gradle.kts", "iosApp/**"],
+      "test_plan": "iosTest simulator suite: adapter contract tests, capability-gap tests proving unsupported features report unavailable (not simulated), and lifecycle tests (background/foreground disconnect/reconnect semantics).",
+      "done_when": ["ios-simulator-build-and-tests gate passes", "Capability matrix rows for iOS are populated with verified statuses", "No iOS-only APIs leak into commonMain"],
+      "independently_testable": true
+    },
+    {
+      "id": "WP-6",
+      "title": "Shared Compose UI screens and navigation",
+      "objective": "Rebuild the seven workflows (join, room list, room create, meeting, chat, participants, fullscreen share) as shared Compose screens driven by shared presenters, with a shared route model consumed by platform navigators.",
+      "depends_on": ["WP-2", "WP-3", "WP-7"],
+      "seams": ["S4", "S5", "S6", "S8"],
+      "read_paths": ["app/src/main/java/com/telnyx/meet/ui", "app/src/main/res/layout", "app/src/main/res/navigation/navigation_main.xml", "app/src/main/res/menu/room_menu.xml", "app/src/main/res/values/strings.xml", "app/src/main/java/com/telnyx/meet/BaseFragment.kt"],
+      "write_paths": ["composeApp/src/commonMain/kotlin/**/ui/**", "composeApp/src/commonMain/kotlin/**/navigation/**", "composeApp/src/commonMain/composeResources/**", "composeApp/src/androidMain/**", "composeApp/src/iosMain/**"],
+      "test_plan": "Compose UI tests for each screen (state rendering, event dispatch), navigation route tests, and a boundary scan proving no android.* or UIKit imports in composeApp commonMain.",
+      "done_when": ["All seven workflows render from shared Compose with no Android/UIKit imports in commonMain", "Safe-args payloads (participantName, roomId, roomName, refreshToken, refreshTime) preserved in the route model", "Visual parity checklist against app/src/main/res/layout screens recorded in docs"],
+      "independently_testable": true
+    },
+    {
+      "id": "WP-7",
+      "title": "Presentation layer: structured concurrency, StateFlow, bounded effects",
+      "objective": "Decompose RoomsViewModel into per-screen presenters with StateFlow state, one-shot buffered effects, and lifecycle-owned scopes; move the token-refresh timer and stats polling behind structured coroutine owners.",
+      "depends_on": ["WP-2", "WP-3"],
+      "seams": ["S2", "S4", "S7"],
+      "read_paths": ["app/src/main/java/com/telnyx/meet/BaseViewModel.kt", "app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt", "app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt", "app/src/main/java/com/telnyx/meet/ui/RoomListFragment.kt", "app/src/main/java/com/telnyx/meet/ui/SharingFullScreenFragment.kt", "app/src/main/java/com/telnyx/meet/ui/utilities/Utils.kt"],
+      "write_paths": ["shared/src/commonMain/kotlin/**/presentation/**", "shared/src/commonTest/**"],
+      "test_plan": "kotlinx-coroutines-test suites: token-refresh scheduling at 90% expiry (replacing CoroutineScope(Dispatchers.Main).launch in RoomFragment.startCounter), stats-polling cancellation, effect replay/buffering semantics, and LiveData-to-StateFlow behavior parity tests for room list, creation, and chat flows.",
+      "done_when": ["No unmanaged CoroutineScope creation in shared presentation", "Screen state is StateFlow; one-off effects have explicit buffered delivery and lifecycle cancellation", "Common unit tests pass without Android runtime"],
+      "independently_testable": true
+    },
+    {
+      "id": "WP-8",
+      "title": "Credential hygiene, architecture guards, CI, documentation",
+      "objective": "Untrack and replace credential-bearing local files with documented environment/local configuration, add boundary scanners and CI for both platforms, and deliver the required docs (architecture overview, capability matrix, build/test instructions, migration notes).",
+      "depends_on": ["WP-1"],
+      "seams": ["build-boundary", "security"],
+      "read_paths": ["local.properties", "github.properties", ".gitignore", ".github/workflows/firebase.yml", ".github/workflows/code_quality.yml", "app/build.gradle", "app/src/main/AndroidManifest.xml", "README.md", "tests.yml"],
+      "write_paths": [".gitignore", ".github/workflows/**", "docs/**", "README.md", "local.properties.example"],
+      "test_plan": "Credential scan over git history and index proving local.properties/github.properties are untracked and values never appear in evidence; architecture gate scanning commonMain for forbidden imports (android.*, UIKit, retrofit2.Call, LiveData, GlobalScope); CI matrix for Android assemble/test and iOS simulator test; documentation review checklist against mission-brief.json evidence_requirements.",
+      "done_when": ["credential-hygiene gate passes with secret-free examples", "Architecture/static scans wired into CI", "Docs cover build, test, capability matrix, and migration notes"],
+      "independently_testable": true
+    }
+  ],
+  "credential_hygiene_findings": [
+    {
+      "path": "local.properties",
+      "finding": "Tracked in git despite the .gitignore entry; loaded by app/build.gradle buildTypes to inject the API key and default room into BuildConfig and resValue. Values must not be reproduced anywhere in this report or evidence; replacement belongs to WP-8.",
+      "evidence": [".gitignore", "app/build.gradle", ".github/workflows/firebase.yml"]
+    },
+    {
+      "path": "github.properties",
+      "finding": "Tracked file loaded by build.gradle for repository credential configuration (build.gradle lines 33-34). Same non-reproduction rule applies; untracking belongs to WP-8.",
+      "evidence": ["build.gradle", "github.properties"]
+    },
+    {
+      "path": "app/src/main/AndroidManifest.xml",
+      "finding": "Contains a Bugsnag API key meta-data value inline; treat as a secret during hygiene work (WP-8) and never echo it into evidence.",
+      "evidence": ["app/src/main/AndroidManifest.xml"]
+    },
+    {
+      "path": "README.md",
+      "finding": "Setup instructions direct developers to paste an API key into di/NetworkModule.kt; replace with environment/local configuration documentation in WP-8.",
+      "evidence": ["README.md", "app/src/main/java/com/telnyx/meet/di/NetworkModule.kt"]
+    }
+  ],
+  "risks": [
+    {
+      "risk": "Unavailable legacy WebRTC/libyuv artifacts",
+      "detail": "benchmark/kmp-fast-vm-test/README.md records that the legacy build fails before tests because historical WebRTC/libyuv artifacts cannot be resolved; the SDK AAR transitively surfaces org.webrtc types used across app code (RoomFragment, SharingFullScreenFragment, ParticipantTileAdapter). WP-1 must pick resolvable replacements or SDK-managed binaries and prove it in the dependency-resolution gate.",
+      "evidence": ["benchmark/kmp-fast-vm-test/README.md", "versions.gradle", "app/build.gradle"]
+    },
+    {
+      "risk": "Kotlin/Gradle version drift",
+      "detail": "Kotlin plugin is declared at 1.8.22 (build.gradle) and 1.5.10 (versions.gradle) simultaneously; Gradle wrapper 7.2 and AGP 7.1.3 are too old for KMP/CMP toolchains.",
+      "evidence": ["build.gradle", "versions.gradle", "gradle/wrapper/gradle-wrapper.properties"]
+    },
+    {
+      "risk": "Android-coupled SDK surface",
+      "detail": "The Room SDK exposes LiveData, needs an Android Context, and its Event/Participant/Message/Stream types appear throughout UI code; every one of those references must be funneled behind the WP-3 contract or the shared module will not compile on iOS.",
+      "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt", "app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt", "app/src/main/java/com/telnyx/meet/ui/adapters/MessageListAdapter.kt", "app/src/main/java/com/telnyx/meet/ui/adapters/ParticipantsAdapter.kt"]
+    },
+    {
+      "risk": "God ViewModel and 1159-line meeting screen",
+      "detail": "RoomsViewModel mixes networking, SDK lifecycle, permissions, dialogs, and chat history; RoomFragment handles layout math, menu actions, stats parsing, and timers. Decomposition must preserve observable behaviors that Espresso covers in app/src/androidTest/java/com/telnyx/meet/ui/ManageRoomDetailsActivityTest.kt.",
+      "evidence": ["app/src/main/java/com/telnyx/meet/ui/RoomsViewModel.kt", "app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt", "app/src/androidTest/java/com/telnyx/meet/ui/ManageRoomDetailsActivityTest.kt"]
+    },
+    {
+      "risk": "Navigation and one-off event semantics",
+      "detail": "Disconnect-triggered navigation relies on Android back-stack behaviors (roomFragmentToJoinRoomFragment with popUpToInclusive), and SDK Event consumption uses getContentIfNotHandled; the shared effect/route design must reproduce these semantics or document intentional changes.",
+      "evidence": ["app/src/main/res/navigation/navigation_main.xml", "app/src/main/java/com/telnyx/meet/ui/RoomFragment.kt"]
+    }
+  ],
+  "open_questions": [
+    "Confirm the exact resolvable WebRTC/Metal replacement strategy for Android and the iOS SDK version/target before WP-1 finalizes the version catalog (owner: WP-1).",
+    "Verify iOS SDK parity per capability (blur, virtual background, screen share, stats) with the real Telnyx iOS SDK before publishing the capability matrix (owner: WP-5).",
+    "Decide whether the legacy :app module is retained as a parity reference during migration or removed once composeApp reaches feature parity (owner: WP-8 documentation)."
+  ]
+}
