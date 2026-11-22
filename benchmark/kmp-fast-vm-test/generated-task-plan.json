@@ -1,59 +1,43 @@
 {
   "acceptance_gate_coverage": {
     "android-build-and-tests": [
-      "impl-kmp-cmp-gradle-skeleton-and-dependency-moderniza",
-      "impl-capability-aware-shared-meeting-contract",
-      "impl-android-meeting-engine-adapter",
-      "impl-shared-compose-ui-screens-and-navigation",
-      "impl-credential-hygiene-architecture-guards-ci-docume"
+      "impl-android-meeting-engine-adapter"
     ],
     "branch-isolation": [
-      "impl-android-meeting-engine-adapter",
-      "impl-shared-compose-ui-screens-and-navigation",
-      "impl-presentation-layer-structured-concurrency-statef",
       "impl-credential-hygiene-architecture-guards-ci-docume"
     ],
     "common-boundary": [
-      "impl-kmp-cmp-gradle-skeleton-and-dependency-moderniza",
-      "impl-shared-compose-ui-screens-and-navigation",
-      "impl-credential-hygiene-architecture-guards-ci-docume"
+      "impl-capability-aware-shared-meeting-contract",
+      "impl-shared-compose-ui-screens-and-navigation"
     ],
     "coroutine-boundary": [
-      "impl-capability-aware-shared-meeting-contract",
       "impl-presentation-layer-structured-concurrency-statef"
     ],
     "credential-hygiene": [
-      "impl-shared-data-layer-models-ktor-rest-client-token-",
       "impl-credential-hygiene-architecture-guards-ci-docume"
     ],
     "dependency-resolution": [
       "impl-kmp-cmp-gradle-skeleton-and-dependency-moderniza"
     ],
     "documentation": [
-      "impl-capability-aware-shared-meeting-contract",
       "impl-credential-hygiene-architecture-guards-ci-docume"
     ],
     "ios-simulator-build-and-tests": [
-      "impl-kmp-cmp-gradle-skeleton-and-dependency-moderniza",
-      "impl-capability-aware-shared-meeting-contract",
-      "impl-android-meeting-engine-adapter",
-      "impl-ios-meeting-engine-adapter-and-app-shell",
-      "impl-credential-hygiene-architecture-guards-ci-docume"
+      "impl-ios-meeting-engine-adapter-and-app-shell"
     ],
     "meeting-contract": [
       "impl-capability-aware-shared-meeting-contract",
       "impl-android-meeting-engine-adapter",
-      "impl-ios-meeting-engine-adapter-and-app-shell",
-      "impl-credential-hygiene-architecture-guards-ci-docume"
+      "impl-ios-meeting-engine-adapter-and-app-shell"
     ],
     "project-structure": [
       "impl-kmp-cmp-gradle-skeleton-and-dependency-moderniza"
     ],
     "workflow-regression": [
       "impl-shared-data-layer-models-ktor-rest-client-token-",
-      "impl-capability-aware-shared-meeting-contract",
-      "impl-shared-compose-ui-screens-and-navigation",
-      "impl-presentation-layer-structured-concurrency-statef"
+      "impl-android-meeting-engine-adapter",
+      "impl-ios-meeting-engine-adapter-and-app-shell",
+      "impl-shared-compose-ui-screens-and-navigation"
     ]
   },
   "behavior_work_package_count": 12,
@@ -103,7 +87,7 @@
     "started_at": "2026-11-22T00:18:50.421605+00:00",
     "wall_elapsed_ms": 288167
   },
-  "repository_head": "7ec8f3b5785a600b1d4dffc957c0bbe58423c1a3",
+  "repository_head": "4075c19bb19928034fcf70d945bae3bdb3e1a83c",
   "schema_version": "1.0",
   "scout_digests": {
     "architecture": "21601a7dcc73ac9e32fa4beb11b62b379c149f75b6917a199b82534241757649",
@@ -119,10 +103,7 @@
         "Kotlin/AGP/Gradle versions are declared once in the version catalog"
       ],
       "acceptance_gate_ids": [
-        "android-build-and-tests",
-        "common-boundary",
         "dependency-resolution",
-        "ios-simulator-build-and-tests",
         "project-structure"
       ],
       "budget": {
@@ -163,7 +144,6 @@
         "DTO field names preserve API contract (e.g., recort_type typo is handled at mapping only)"
       ],
       "acceptance_gate_ids": [
-        "credential-hygiene",
         "workflow-regression"
       ],
       "budget": {
@@ -201,12 +181,8 @@
         "Fake engine passes all shared contract tests"
       ],
       "acceptance_gate_ids": [
-        "android-build-and-tests",
-        "coroutine-boundary",
-        "documentation",
-        "ios-simulator-build-and-tests",
-        "meeting-contract",
-        "workflow-regression"
+        "common-boundary",
+        "meeting-contract"
       ],
       "budget": {
         "ci_minutes": 30,
@@ -240,9 +216,8 @@
       ],
       "acceptance_gate_ids": [
         "android-build-and-tests",
-        "branch-isolation",
-        "ios-simulator-build-and-tests",
-        "meeting-contract"
+        "meeting-contract",
+        "workflow-regression"
       ],
       "budget": {
         "ci_minutes": 30,
@@ -279,7 +254,8 @@
       ],
       "acceptance_gate_ids": [
         "ios-simulator-build-and-tests",
-        "meeting-contract"
+        "meeting-contract",
+        "workflow-regression"
       ],
       "budget": {
         "ci_minutes": 30,
@@ -313,8 +289,6 @@
         "Visual parity checklist against app/src/main/res/layout screens recorded in docs"
       ],
       "acceptance_gate_ids": [
-        "android-build-and-tests",
-        "branch-isolation",
         "common-boundary",
         "workflow-regression"
       ],
@@ -358,9 +332,7 @@
         "Common unit tests pass without Android runtime"
       ],
       "acceptance_gate_ids": [
-        "branch-isolation",
-        "coroutine-boundary",
-        "workflow-regression"
+        "coroutine-boundary"
       ],
       "budget": {
         "ci_minutes": 30,
@@ -396,13 +368,9 @@
         "Docs cover build, test, capability matrix, and migration notes"
       ],
       "acceptance_gate_ids": [
-        "android-build-and-tests",
         "branch-isolation",
-        "common-boundary",
         "credential-hygiene",
-        "documentation",
-        "ios-simulator-build-and-tests",
-        "meeting-contract"
+        "documentation"
       ],
       "budget": {
         "ci_minutes": 30,
